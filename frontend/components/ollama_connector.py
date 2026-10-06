@@ -113,7 +113,7 @@ def render_ollama_status_widget(ollama_endpoint: str = "http://127.0.0.1:11434",
                     }}
                 }} catch (err) {{
                     ollamaBadge.className = "badge badge-danger";
-                    ollamaBadge.innerText = "Local Ollama Disconnected / CORS Blocked";
+                    ollamaBadge.innerText = "Local Ollama Disconnected / Mixed Content Blocked";
                     modelBadge.className = "badge badge-danger";
                     modelBadge.innerText = "Model Unavailable";
                 }}
@@ -156,8 +156,8 @@ def render_browser_ollama_generator(
                 border: 1px solid #334155;
                 border-radius: 10px;
                 padding: 20px;
-                min-height: 480px;
-                max-height: 580px;
+                min-height: 440px;
+                max-height: 540px;
                 overflow-y: auto;
                 font-size: 15px;
                 line-height: 1.65;
@@ -200,10 +200,19 @@ def render_browser_ollama_generator(
                 margin-top: 12px;
                 background: #1e293b;
                 border: 1px solid #0284c7;
-                padding: 14px;
+                padding: 16px;
                 border-radius: 8px;
                 font-size: 13px;
                 color: #93c5fd;
+                line-height: 1.6;
+            }}
+            .setup-guide strong {{ color: #ffffff; }}
+            .step-box {{
+                background: #0f172a;
+                border: 1px solid #334155;
+                padding: 10px 14px;
+                border-radius: 6px;
+                margin-top: 8px;
             }}
         </style>
     </head>
@@ -264,7 +273,7 @@ def render_browser_ollama_generator(
 
                         buffer += decoder.decode(value, {{ stream: true }});
                         const lines = buffer.split("\\n");
-                        buffer = lines.pop(); // Keep partial line in buffer
+                        buffer = lines.pop();
 
                         for (const line of lines) {{
                             if (line.trim().length === 0) continue;
@@ -280,7 +289,6 @@ def render_browser_ollama_generator(
                         }}
                     }}
 
-                    // Flush remaining buffer
                     if (buffer.trim().length > 0) {{
                         try {{
                             const jsonChunk = JSON.parse(buffer);
@@ -294,20 +302,43 @@ def render_browser_ollama_generator(
                 }} catch (err) {{
                     statusLabel.innerText = "Generation failed.";
                     genBtn.disabled = false;
+
+                    const isFetchError = err.message.includes("Failed to fetch") || err.name === "TypeError";
                     
                     let errorHtml = '<div class="error-box"><strong>Error:</strong> ' + escapeHtml(err.message) + '</div>';
-                    errorHtml += `
-                        <div class="setup-guide">
-                            <strong>Local Ollama Setup & CORS Troubleshooting:</strong><br>
-                            1. Install Ollama from <a href="https://ollama.com" target="_blank" style="color:#60a5fa;">ollama.com</a>.<br>
-                            2. Open Terminal / PowerShell and run: <code>ollama pull qwen2.5:3b</code><br>
-                            3. Ensure Ollama is running on your laptop.<br>
-                            4. If deployed on Streamlit Cloud, configure browser origin permission:<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;• <strong>Windows (PowerShell):</strong> <code>$env:OLLAMA_ORIGINS="*" ; ollama serve</code><br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;• <strong>macOS / Linux:</strong> <code>OLLAMA_ORIGINS="*" ollama serve</code><br>
-                            5. Click "Start Local Qwen Generation" again.
-                        </div>
-                    `;
+                    
+                    if (isFetchError) {{
+                        errorHtml += `
+                            <div class="setup-guide">
+                                ⚠️ <strong>Browser Mixed Content / Local Network Blocking Detected:</strong><br>
+                                Because Streamlit Cloud is hosted on HTTPS (<code>https://*.streamlit.app</code>), your browser blocks HTTP calls to localhost (<code>http://127.0.0.1:11434</code>) by default.<br><br>
+                                <strong>How to Allow Localhost Access in Chrome / Edge (10 Seconds):</strong>
+                                <div class="step-box">
+                                    1. Click the <strong>Site Settings / Lock icon 🔒</strong> to the left of the URL in your address bar.<br>
+                                    2. Click <strong>Site Settings</strong>.<br>
+                                    3. Find <strong>"Insecure content"</strong> (or Local Network Access) and change it from <em>Block</em> to <strong>"Allow"</strong>.<br>
+                                    4. Refresh this webpage and click <strong>Start Local Qwen Generation</strong> again!
+                                </div>
+                                <br>
+                                <strong>Required Ollama Terminal Command:</strong>
+                                <div class="step-box">
+                                    • <strong>Windows (PowerShell):</strong> <code>$env:OLLAMA_ORIGINS="*" ; ollama serve</code><br>
+                                    • <strong>macOS / Linux:</strong> <code>OLLAMA_ORIGINS="*" ollama serve</code>
+                                </div>
+                            </div>
+                        `;
+                    }} else {{
+                        errorHtml += `
+                            <div class="setup-guide">
+                                <strong>Local Ollama Setup Checklist:</strong><br>
+                                1. Install Ollama from <a href="https://ollama.com" target="_blank" style="color:#60a5fa;">ollama.com</a>.<br>
+                                2. Run: <code>ollama pull qwen2.5:3b</code><br>
+                                3. Ensure Ollama is running on your laptop with <code>OLLAMA_ORIGINS="*"</code>.<br>
+                                4. Click "Start Local Qwen Generation" again.
+                            </div>
+                        `;
+                    }}
+
                     errorContainer.innerHTML = errorHtml;
                 }}
             }}
