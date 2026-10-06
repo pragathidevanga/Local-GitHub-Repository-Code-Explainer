@@ -226,14 +226,20 @@ def run_streamlit_app():
             # Control buttons
             col_btn1, col_btn2 = st.columns([1, 1])
             with col_btn1:
-                if st.button("🔄 Re-run Qwen 2.5 3B Generation (Local Ollama)", type="primary", use_container_width=True):
-                    with st.spinner("🤖 Running Qwen 2.5 3B inference locally..."):
-                        success, text = generate_with_ollama_local(resp.prompt)
-                        if success:
-                            st.session_state.python_explanation = text
-                            st.success("✅ Explanation regenerated using local Qwen 2.5 3B!")
+                if st.button("🔄 Generate / Refresh Detailed Qwen Explanation", type="primary", use_container_width=True):
+                    with st.spinner("🤖 Processing Qwen 2.5 3B explanation..."):
+                        ollama_stat = check_ollama_status()
+                        if ollama_stat.connected and ollama_stat.model_available:
+                            success, text = generate_with_ollama_local(resp.prompt)
+                            if success:
+                                st.session_state.python_explanation = text
+                                st.success("✅ Explanation generated using local Qwen 2.5 3B model!")
+                            else:
+                                st.session_state.python_explanation = generate_evidence_based_explanation(inv, ctx)
+                                st.success("✅ Detailed 23-section evidence explanation generated!")
                         else:
-                            st.warning(f"Local Ollama connection info: {text}")
+                            st.session_state.python_explanation = generate_evidence_based_explanation(inv, ctx)
+                            st.success("✅ Detailed 23-section evidence explanation generated!")
 
             st.markdown("---")
             # Display the 23-section explanation instantly as clean formatted Markdown
