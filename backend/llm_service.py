@@ -180,5 +180,12 @@ def generate_with_ollama_local(
                 return True, result.get("response", "")
         else:
             return False, f"Ollama HTTP error {response.status_code}: {response.text}"
+    except (requests.exceptions.ConnectionError, ConnectionRefusedError):
+        return (
+            False,
+            "Local Ollama is not reachable on 127.0.0.1:11434 from Python.\n"
+            "• If running on Streamlit Cloud: Streamlit Cloud's Python server cannot reach your laptop's localhost directly. Use the Browser-Side Streaming Component below!\n"
+            "• If running locally: Ensure Ollama is running on your machine ('ollama serve')."
+        )
     except Exception as exc:
-        return False, f"Ollama request failed: {str(exc)}"
+        return False, f"Ollama request error: {str(exc)}"
