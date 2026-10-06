@@ -343,14 +343,9 @@ def render_browser_ollama_generator(
                 }}
             }}
 
-            function escapeHtml(str) {{
+            function escapeHtml(str) {
                 return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            }}
-
-            // Auto-trigger generation on mount
-            window.addEventListener("DOMContentLoaded", () => {{
-                setTimeout(startGeneration, 300);
-            }});
+            }
         </script>
     </body>
     </html>
