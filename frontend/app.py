@@ -81,19 +81,20 @@ def run_streamlit_app():
     else:
         st.info("💻 **Laptop Ollama Status**: Server inference ready. (To use your laptop's local model, run `$env:OLLAMA_ORIGINS="*"; ollama serve`).")
 
-    # Input Form Container
+    # Input Form Container (with st.form to capture Enter key and button clicks reliably)
     st.markdown("### 🔗 Enter Public GitHub Repository URL")
     
-    col1, col2 = st.columns([4, 1])
-    with col1:
-        repo_url = st.text_input(
-            "GitHub Repository URL",
-            placeholder="https://github.com/username/repository",
-            label_visibility="collapsed",
-            key="input_repo_url",
-        )
-    with col2:
-        analyze_btn = st.button("🚀 Analyze Repository", use_container_width=True, type="primary")
+    with st.form(key="repo_search_form", clear_on_submit=False):
+        col1, col2 = st.columns([4, 1])
+        with col1:
+            repo_url = st.text_input(
+                "GitHub Repository URL",
+                placeholder="https://github.com/username/repository",
+                label_visibility="collapsed",
+                key="input_repo_url",
+            )
+        with col2:
+            analyze_btn = st.form_submit_button("🚀 Analyze Repository", use_container_width=True, type="primary")
 
     # Quick Sample Repositories Row
     st.markdown("**Try a sample public repository:**")
@@ -114,12 +115,12 @@ def run_streamlit_app():
     if "python_explanation" not in st.session_state:
         st.session_state.python_explanation = None
 
-    target_url = repo_url or st.session_state.get("input_repo_url", "")
+    target_url = repo_url.strip() if repo_url else st.session_state.get("input_repo_url", "").strip()
 
     if analyze_btn and target_url:
         with st.spinner("Cloning repository (shallow), scanning inventory, and building smart context..."):
             st.session_state.python_explanation = None  # Reset for new repository
-            response: AnalysisResponse = process_repository_service(target_url.strip())
+            response: AnalysisResponse = process_repository_service(target_url)
             st.session_state.analysis_response = response
 
     resp: AnalysisResponse | None = st.session_state.analysis_response
