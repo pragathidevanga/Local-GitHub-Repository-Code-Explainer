@@ -281,3 +281,39 @@ def generate_with_ollama_local(
         )
     except Exception as exc:
         return False, f"Ollama request error: {str(exc)}"
+
+
+def stream_qwen_explanation(
+    prompt: str,
+    fallback_text: str,
+    endpoint: str = DEFAULT_OLLAMA_ENDPOINT,
+    model: str = DEFAULT_MODEL,
+) -> Generator[str, None, None]:
+    """Yield token chunks live from local Ollama Qwen model if reachable, or fallback_text word-by-word."""
+    ollama_stat = check_ollama_status(endpoint=endpoint, target_model=model)
+    if ollama_stat.connected and ollama_stat.model_available:
+        url = f"{endpoint.rstrip('/')}/api/generate"
+        payload = {
+            "model": model,
+            "prompt": prompt,
+            "stream": True,
+            "options": {"temperature": 0.2, "num_predict": 1200},
+            "keep_alive": "10m",
+        }
+        try:
+            response = requests.post(url, json=payload, stream=True, timeout=120.0)
+            if response.status_code == 200:
+                for line in response.iter_lines():
+                    if line:
+                        chunk = json.loads(line.decode("utf-8"))
+                        if "response" in chunk:
+                            yield chunk["response"]
+                return
+        except Exception:
+            pass
+
+    # Fallback live token stream
+    import time
+    for word in fallback_text.split(" "):
+        yield word + " "
+        time.sleep(0.01)

@@ -8,6 +8,7 @@ from backend.llm_service import (
     check_ollama_status,
     generate_evidence_based_explanation,
     generate_with_ollama_local,
+    stream_qwen_explanation,
 )
 from backend.main import process_repository_service
 from backend.models import AnalysisResponse
@@ -232,31 +233,28 @@ def run_streamlit_app():
                 key=f"btn_start_{inv.owner}_{inv.repo_name}",
             )
 
-            # Compute explanation if not yet generated or start button clicked
-            if not st.session_state.python_explanation or start_btn:
-                with st.spinner("🤖 Generating Qwen 2.5 3B detailed 23-section explanation..."):
-                    ollama_stat_check = check_ollama_status()
-                    if ollama_stat_check.connected and ollama_stat_check.model_available:
-                        success, text = generate_with_ollama_local(resp.prompt)
-                        if success:
-                            st.session_state.python_explanation = text
-                        else:
-                            st.session_state.python_explanation = generate_evidence_based_explanation(inv, ctx)
+            # Compute initial static explanation if not yet stored
+            if not st.session_state.python_explanation:
+                ollama_stat_check = check_ollama_status()
+                if ollama_stat_check.connected and ollama_stat_check.model_available:
+                    success, text = generate_with_ollama_local(resp.prompt)
+                    if success:
+                        st.session_state.python_explanation = text
                     else:
                         st.session_state.python_explanation = generate_evidence_based_explanation(inv, ctx)
+                else:
+                    st.session_state.python_explanation = generate_evidence_based_explanation(inv, ctx)
 
             st.markdown("---")
 
-            # When button is clicked, stream live typewriter effect so the user sees generation happen!
             if start_btn:
-                st.success("✅ **Qwen 2.5 3B Model Explanation Generated Successfully!** Streaming explanation live:")
-                def stream_tokens_generator():
-                    import time
-                    explanation_text = st.session_state.python_explanation or generate_evidence_based_explanation(inv, ctx)
-                    for word in explanation_text.split(" "):
-                        yield word + " "
-                        time.sleep(0.01)
-                st.write_stream(stream_tokens_generator)
+                ollama_stat_check = check_ollama_status()
+                if ollama_stat_check.connected and ollama_stat_check.model_available:
+                    st.success(f"🟢 **Local Laptop Ollama Connected!** Streaming real Qwen 2.5 3B model inference live from `{ollama_stat_check.endpoint}`:")
+                else:
+                    st.info("💻 **Cloud / Server Mode**: Streaming comprehensive 23-section evidence explanation live:")
+
+                st.write_stream(stream_qwen_explanation(resp.prompt, fallback_text=st.session_state.python_explanation))
             else:
                 st.markdown(st.session_state.python_explanation)
 
