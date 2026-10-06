@@ -263,18 +263,38 @@ def run_streamlit_app():
         # TAB 4: AI EXPLANATION
         with tab_ai:
             st.markdown("### 🤖 Detailed AI Explanation (Qwen 2.5 3B)")
-            st.markdown("Analyze repository evidence, code structure, technologies, and workflow using **Qwen 2.5 3B** local AI model.")
+            st.markdown("Analyze repository evidence, code structure, technologies, and workflow using **Qwen 2.5 3B** local AI model on your laptop.")
 
+            # Live Ollama Connection Status Probe Banner
+            ollama_stat_check = check_ollama_status(endpoint=ollama_endpoint, target_model=target_model)
+
+            if ollama_stat_check.connected and ollama_stat_check.model_available:
+                st.success(f"🟢 **Local Laptop Ollama Connected**: Model `{target_model}` active on `{ollama_stat_check.endpoint}`")
+            elif ollama_stat_check.connected:
+                st.warning(f"🟡 **Local Laptop Ollama Connected**: Ollama running on `{ollama_stat_check.endpoint}`, but model `{target_model}` missing. Run `ollama pull {target_model}`")
+            else:
+                st.info(
+                    f"""
+                    💻 **Connect Local Laptop Ollama (`{target_model}`)**:
+                    To run local AI model inference on your laptop:
+                    1. **Install Ollama**: Download from [ollama.com](https://ollama.com)
+                    2. **Download Qwen 2.5 3B**: Open PowerShell and run: `ollama pull {target_model}`
+                    3. **Start Ollama with Allowed Origins**:
+                       - **Windows (PowerShell)**: `$env:OLLAMA_ORIGINS="*" ; ollama serve`
+                       - **macOS / Linux**: `OLLAMA_ORIGINS="*" ollama serve`
+                    """
+                )
+
+            # Primary Connect & Generate Button
             start_btn = st.button(
-                "🚀 Start / Regenerate Qwen 2.5 3B Explanation",
+                "🚀 Connect to Local Ollama & Generate Explanation",
                 type="primary",
                 use_container_width=True,
-                key=f"btn_start_{inv.owner}_{inv.repo_name}",
+                key=f"btn_connect_ollama_{inv.owner}_{inv.repo_name}",
             )
 
             # Compute initial static explanation if not yet stored
             if not st.session_state.python_explanation:
-                ollama_stat_check = check_ollama_status(endpoint=ollama_endpoint, target_model=target_model)
                 if ollama_stat_check.connected and ollama_stat_check.model_available:
                     success, text = generate_with_ollama_local(resp.prompt, endpoint=ollama_endpoint, model=target_model)
                     if success:
@@ -287,11 +307,11 @@ def run_streamlit_app():
             st.markdown("---")
 
             if start_btn:
-                ollama_stat_check = check_ollama_status(endpoint=ollama_endpoint, target_model=target_model)
-                if ollama_stat_check.connected and ollama_stat_check.model_available:
-                    st.success(f"🟢 **Ollama Connected!** Streaming real `{target_model}` model inference live from `{ollama_stat_check.endpoint}`:")
+                stat_recheck = check_ollama_status(endpoint=ollama_endpoint, target_model=target_model)
+                if stat_recheck.connected and stat_recheck.model_available:
+                    st.success(f"🟢 **Local Ollama Connected!** Streaming real `{target_model}` model inference live from `{stat_recheck.endpoint}`:")
                 else:
-                    st.info("💻 **Evidence Mode**: Streaming comprehensive 23-section explanation live:")
+                    st.info("💻 **Evidence Explanation Mode**: Local Ollama not connected on 127.0.0.1:11434. Streaming comprehensive 23-section evidence explanation live:")
 
                 st.write_stream(stream_qwen_explanation(resp.prompt, fallback_text=st.session_state.python_explanation, endpoint=ollama_endpoint, model=target_model))
             else:
