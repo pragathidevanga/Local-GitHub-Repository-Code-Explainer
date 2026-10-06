@@ -72,15 +72,54 @@ def run_streamlit_app():
             """
         )
 
+    # Sidebar Configuration & Ollama Controls
+    with st.sidebar:
+        st.markdown("### ⚙️ Ollama Settings")
+        st.markdown("Configure local or remote Ollama endpoint for AI inference:")
+        
+        ollama_endpoint = st.text_input(
+            "Ollama Endpoint URL",
+            value="http://127.0.0.1:11434",
+            help="Default is http://127.0.0.1:11434. If using a tunnel or custom host, enter URL here.",
+            key="cfg_ollama_endpoint",
+        ).strip()
+        
+        target_model = st.text_input(
+            "Ollama Model Name",
+            value="qwen2.5:3b",
+            help="Default is qwen2.5:3b.",
+            key="cfg_ollama_model",
+        ).strip()
+
+        st.markdown("---")
+        if st.button("🔌 Test Connection to Ollama", use_container_width=True):
+            stat = check_ollama_status(endpoint=ollama_endpoint, target_model=target_model)
+            if stat.connected and stat.model_available:
+                st.success(f"🟢 Connected! Model '{target_model}' ready on {ollama_endpoint}.")
+            elif stat.connected:
+                st.warning(f"🟡 Connected, but '{target_model}' missing. Run `ollama pull {target_model}`.")
+            else:
+                st.error(f"🔴 Cannot reach {ollama_endpoint}. Start Ollama with `$env:OLLAMA_ORIGINS=\"*\"; ollama serve`.")
+
+        st.markdown("---")
+        st.markdown(
+            """
+            ### 📌 Quick Setup Checklist:
+            1. Install Ollama ([ollama.com](https://ollama.com))
+            2. Run: `ollama pull qwen2.5:3b`
+            3. Run: `$env:OLLAMA_ORIGINS="*" ; ollama serve`
+            """
+        )
+
     # Laptop Ollama status probe
-    ollama_stat = check_ollama_status()
+    ollama_stat = check_ollama_status(endpoint=ollama_endpoint, target_model=target_model)
     if ollama_stat.connected:
         if ollama_stat.model_available:
-            st.success(f"🟢 **Local Ollama Connected**: Model `qwen2.5:3b` is active on `{ollama_stat.endpoint}`.")
+            st.success(f"🟢 **Ollama Connected**: Model `{target_model}` is active on `{ollama_stat.endpoint}`.")
         else:
-            st.warning(f"🟡 **Local Ollama Connected**: Ollama is running on `{ollama_stat.endpoint}`, but model `qwen2.5:3b` is missing. Run `ollama pull qwen2.5:3b`.")
+            st.warning(f"🟡 **Ollama Connected**: Ollama is running on `{ollama_stat.endpoint}`, but model `{target_model}` is missing. Run `ollama pull {target_model}`.")
     else:
-        st.info("💻 **Laptop Ollama Status**: Server inference ready. (To use your laptop's local model, run: `$env:OLLAMA_ORIGINS='*'; ollama serve`).")
+        st.info("💻 **Ollama Status**: Ready for model inference. (Start Ollama on your laptop: `$env:OLLAMA_ORIGINS='*'; ollama serve`).")
 
     # Input Form Container (with st.form to capture Enter key and button clicks reliably)
     st.markdown("### 🔗 Enter Public GitHub Repository URL")
@@ -235,9 +274,9 @@ def run_streamlit_app():
 
             # Compute initial static explanation if not yet stored
             if not st.session_state.python_explanation:
-                ollama_stat_check = check_ollama_status()
+                ollama_stat_check = check_ollama_status(endpoint=ollama_endpoint, target_model=target_model)
                 if ollama_stat_check.connected and ollama_stat_check.model_available:
-                    success, text = generate_with_ollama_local(resp.prompt)
+                    success, text = generate_with_ollama_local(resp.prompt, endpoint=ollama_endpoint, model=target_model)
                     if success:
                         st.session_state.python_explanation = text
                     else:
@@ -248,13 +287,13 @@ def run_streamlit_app():
             st.markdown("---")
 
             if start_btn:
-                ollama_stat_check = check_ollama_status()
+                ollama_stat_check = check_ollama_status(endpoint=ollama_endpoint, target_model=target_model)
                 if ollama_stat_check.connected and ollama_stat_check.model_available:
-                    st.success(f"🟢 **Local Laptop Ollama Connected!** Streaming real Qwen 2.5 3B model inference live from `{ollama_stat_check.endpoint}`:")
+                    st.success(f"🟢 **Ollama Connected!** Streaming real `{target_model}` model inference live from `{ollama_stat_check.endpoint}`:")
                 else:
-                    st.info("💻 **Cloud / Server Mode**: Streaming comprehensive 23-section evidence explanation live:")
+                    st.info("💻 **Evidence Mode**: Streaming comprehensive 23-section explanation live:")
 
-                st.write_stream(stream_qwen_explanation(resp.prompt, fallback_text=st.session_state.python_explanation))
+                st.write_stream(stream_qwen_explanation(resp.prompt, fallback_text=st.session_state.python_explanation, endpoint=ollama_endpoint, model=target_model))
             else:
                 st.markdown(st.session_state.python_explanation)
 
