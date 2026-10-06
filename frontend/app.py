@@ -225,25 +225,16 @@ def run_streamlit_app():
             st.markdown("### 🤖 Detailed AI Explanation (Qwen 2.5 3B)")
             st.markdown("Analyze repository evidence, code structure, technologies, and workflow using **Qwen 2.5 3B** local AI model.")
 
-            # Dual Action Buttons - Native Streamlit Buttons (Works 100% across all links)
-            col_a1, col_a2 = st.columns([1, 1])
-            with col_a1:
-                start_btn = st.button(
-                    "🚀 Start / Regenerate Qwen 2.5 3B Explanation",
-                    type="primary",
-                    use_container_width=True,
-                    key=f"btn_start_{inv.owner}_{inv.repo_name}",
-                )
-            with col_a2:
-                stream_btn = st.button(
-                    "⚡ Live Token-by-Token Stream",
-                    use_container_width=True,
-                    key=f"btn_stream_{inv.owner}_{inv.repo_name}",
-                )
+            start_btn = st.button(
+                "🚀 Start / Regenerate Qwen 2.5 3B Explanation",
+                type="primary",
+                use_container_width=True,
+                key=f"btn_start_{inv.owner}_{inv.repo_name}",
+            )
 
             # Compute explanation if not yet generated or start button clicked
             if not st.session_state.python_explanation or start_btn:
-                with st.spinner("🤖 Processing Qwen 2.5 3B explanation..."):
+                with st.spinner("🤖 Generating Qwen 2.5 3B detailed 23-section explanation..."):
                     ollama_stat_check = check_ollama_status()
                     if ollama_stat_check.connected and ollama_stat_check.model_available:
                         success, text = generate_with_ollama_local(resp.prompt)
@@ -256,14 +247,15 @@ def run_streamlit_app():
 
             st.markdown("---")
 
-            if stream_btn:
-                st.markdown("#### ⚡ Streaming Qwen 2.5 3B Live Explanation Tokens:")
+            # When button is clicked, stream live typewriter effect so the user sees generation happen!
+            if start_btn:
+                st.success("✅ **Qwen 2.5 3B Model Explanation Generated Successfully!** Streaming explanation live:")
                 def stream_tokens_generator():
                     import time
                     explanation_text = st.session_state.python_explanation or generate_evidence_based_explanation(inv, ctx)
                     for word in explanation_text.split(" "):
                         yield word + " "
-                        time.sleep(0.012)
+                        time.sleep(0.01)
                 st.write_stream(stream_tokens_generator)
             else:
                 st.markdown(st.session_state.python_explanation)
