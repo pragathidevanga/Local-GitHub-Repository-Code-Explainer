@@ -137,6 +137,7 @@ def render_browser_ollama_generator(
     escaped_fallback = json.dumps(fallback_text)
 
     html_code = f"""
+    <!-- REPO_KEY_HASH: {key or 'default'} -->
     <!DOCTYPE html>
     <html>
     <head>
@@ -294,4 +295,8 @@ def render_browser_ollama_generator(
     </body>
     </html>
     """
-    components.html(html_code, height=height, key=key)
+    if key:
+        with st.container(key=f"container_{key}"):
+            components.html(html_code, height=height)
+    else:
+        components.html(html_code, height=height)
