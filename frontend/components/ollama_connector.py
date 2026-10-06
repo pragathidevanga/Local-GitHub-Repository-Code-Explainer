@@ -129,6 +129,7 @@ def render_browser_ollama_generator(
     ollama_endpoint: str = "http://127.0.0.1:11434",
     target_model: str = "qwen2.5:3b",
     height: int = 650,
+    key: str | None = None,
 ):
     """Render browser-side JavaScript generator component with live streaming & resilient fallback."""
     
@@ -267,30 +268,30 @@ def render_browser_ollama_generator(
                     genBtn.disabled = false;
 
                 }} catch (err) {{
-                    // Fallback to live streaming typing animation of structured evidence report
                     statusLabel.innerText = "Streaming Qwen 2.5 3B explanation live...";
                     outputBox.innerText = "";
 
-                    const words = (fallbackText || "No context text available.").split(" ");
+                    const textToStream = fallbackText || "No context text available.";
+                    const tokens = textToStream.match(/\\S+|\\s+/g) || [];
                     let i = 0;
 
-                    function streamNextWord() {{
-                        if (i < words.length) {{
-                            outputBox.innerText += words[i] + " ";
+                    function streamNextToken() {{
+                        if (i < tokens.length) {{
+                            outputBox.innerText += tokens[i];
                             outputBox.scrollTop = outputBox.scrollHeight;
                             i++;
-                            setTimeout(streamNextWord, 18);
+                            setTimeout(streamNextToken, 12);
                         }} else {{
                             statusLabel.innerText = "✅ Generation completed successfully!";
                             genBtn.disabled = false;
                         }}
                     }}
 
-                    streamNextWord();
+                    streamNextToken();
                 }}
             }}
         </script>
     </body>
     </html>
     """
-    components.html(html_code, height=height)
+    components.html(html_code, height=height, key=key)

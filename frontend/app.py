@@ -94,6 +94,11 @@ def run_streamlit_app():
     for idx, (label, sample_url) in enumerate(EXAMPLE_REPOSITORIES):
         if sample_cols[idx].button(f"📦 {label}", key=f"sample_{idx}", use_container_width=True):
             st.session_state.input_repo_url = sample_url
+            st.session_state.analysis_response = None
+            st.session_state.python_explanation = None
+            with st.spinner("Cloning repository (shallow), scanning inventory, and building smart context..."):
+                response: AnalysisResponse = process_repository_service(sample_url)
+                st.session_state.analysis_response = response
             st.rerun()
 
     # Session state initialization
@@ -106,9 +111,9 @@ def run_streamlit_app():
 
     if analyze_btn and target_url:
         with st.spinner("Cloning repository (shallow), scanning inventory, and building smart context..."):
+            st.session_state.python_explanation = None  # Reset for new repository
             response: AnalysisResponse = process_repository_service(target_url.strip())
             st.session_state.analysis_response = response
-            st.session_state.python_explanation = None  # Reset for new repository
 
     resp: AnalysisResponse | None = st.session_state.analysis_response
 
@@ -247,7 +252,11 @@ def run_streamlit_app():
             st.markdown("---")
             with st.expander("⚡ Interactive Token-by-Token Streaming Component (Browser Live Ollama Mode)", expanded=True):
                 st.info("Click the button below to stream Qwen 2.5 3B explanation live token-by-token. Works in all environments (Localhost & Streamlit Cloud).")
-                render_browser_ollama_generator(resp.prompt, fallback_text=st.session_state.python_explanation)
+                render_browser_ollama_generator(
+                    resp.prompt,
+                    fallback_text=st.session_state.python_explanation,
+                    key=f"ollama_gen_{inv.owner}_{inv.repo_name}",
+                )
 
             with st.expander("📝 Inspect Raw Qwen Prompt Context", expanded=False):
                 st.code(resp.prompt, language="text")
