@@ -128,10 +128,10 @@ def render_browser_ollama_generator(
     fallback_text: str = "",
     ollama_endpoint: str = "http://127.0.0.1:11434",
     target_model: str = "qwen2.5:3b",
-    height: int = 760,
+    height: int = 780,
     key: str | None = None,
 ):
-    """Render browser-side JavaScript generator component matching reference layout."""
+    """Render original, uniquely styled Browser-Side Local Ollama AI Generator component."""
     
     escaped_prompt = json.dumps(prompt)
     escaped_fallback = json.dumps(fallback_text)
@@ -148,209 +148,195 @@ def render_browser_ollama_generator(
                 margin: 0;
                 padding: 10px;
                 background-color: transparent;
-                color: #e5e7eb;
+                color: #f1f5f9;
             }}
-            .notice-box {{
-                background: #0f2942;
-                border: 1px solid #1d4ed8;
-                padding: 16px 20px;
-                border-radius: 8px;
-                margin-bottom: 20px;
-                color: #93c5fd;
-                font-size: 14px;
-                line-height: 1.6;
+            
+            /* Main Dashboard Card */
+            .dash-card {{
+                background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
+                border: 1px solid #334155;
+                border-radius: 12px;
+                padding: 24px;
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
             }}
-            .notice-title {{
-                color: #60a5fa;
-                font-size: 15px;
-                font-weight: 700;
-                margin-bottom: 8px;
-            }}
-            .notice-list {{
-                margin: 0;
-                padding-left: 20px;
-            }}
-            .notice-list li {{
-                margin-bottom: 6px;
-            }}
-            .connector-title {{
-                color: #f8fafc;
-                margin-top: 10px;
-                margin-bottom: 12px;
-                font-size: 20px;
-                font-weight: 700;
-            }}
-            .card {{
-                background: #111827;
-                border: 1px solid #1f2937;
-                border-radius: 10px;
-                padding: 20px;
-                color: #f3f4f6;
-            }}
-            .status-row {{
+
+            /* Header Title */
+            .dash-header {{
                 display: flex;
                 align-items: center;
-                gap: 12px;
-                margin-bottom: 16px;
-                font-size: 15px;
-                font-weight: 600;
+                justify-content: space-between;
+                border-bottom: 1px solid #334155;
+                padding-bottom: 16px;
+                margin-bottom: 20px;
             }}
-            .badge {{
+            .dash-title {{
+                font-size: 20px;
+                font-weight: 800;
+                color: #38bdf8;
+                letter-spacing: -0.02em;
+            }}
+            .dash-subtitle {{
+                font-size: 13px;
+                color: #94a3b8;
+                margin-top: 4px;
+            }}
+
+            /* Live Indicators Row */
+            .badge-group {{
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }}
+            .pill {{
                 display: inline-flex;
                 align-items: center;
-                padding: 4px 12px;
+                gap: 6px;
+                padding: 5px 14px;
                 border-radius: 9999px;
                 font-size: 12px;
                 font-weight: 700;
-                letter-spacing: 0.03em;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
             }}
-            .badge-success {{ background: #064e3b; color: #6ee7b7; border: 1px solid #059669; }}
-            .badge-warning {{ background: #78350f; color: #fde68a; border: 1px solid #d97706; }}
-            .badge-danger {{ background: #7f1d1d; color: #fca5a5; border: 1px solid #dc2626; }}
-            
-            .ctrl-row {{
+            .pill-online {{ background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid #10b981; }}
+            .pill-offline {{ background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid #ef4444; }}
+            .pill-model {{ background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid #0284c7; }}
+
+            /* Controls Panel */
+            .ctrl-grid {{
                 display: flex;
                 flex-wrap: wrap;
                 align-items: center;
-                gap: 10px;
-                margin-bottom: 16px;
-            }}
-            .endpoint-input {{
-                background: #1f2937;
-                border: 1px solid #374151;
-                color: #ffffff;
-                padding: 8px 14px;
-                border-radius: 6px;
-                width: 210px;
-                font-size: 14px;
-                font-family: monospace;
-            }}
-            .btn-ctrl {{
-                background: #374151;
-                color: #ffffff;
-                border: 1px solid #4b5563;
-                padding: 8px 16px;
-                border-radius: 6px;
-                cursor: pointer;
-                font-weight: 600;
-                font-size: 13px;
-            }}
-            .btn-ctrl:hover {{ background: #4b5563; }}
-            .btn-sub {{
-                background: #1f2937;
-                color: #9ca3af;
-                border: 1px solid #374151;
-                padding: 8px 14px;
-                border-radius: 6px;
-                cursor: pointer;
-                font-weight: 600;
-                font-size: 12px;
-            }}
-            .btn-sub:hover {{ background: #374151; color: #ffffff; }}
-
-            .error-box {{
-                background: #450a0a;
-                border: 1px solid #991b1b;
-                color: #fca5a5;
-                padding: 14px 18px;
-                border-radius: 8px;
-                margin-bottom: 16px;
-                font-size: 13px;
-                line-height: 1.65;
-            }}
-            .error-box strong {{ color: #ffffff; }}
-
-            .action-row {{
-                display: flex;
                 gap: 12px;
-                margin-bottom: 16px;
+                margin-bottom: 20px;
+                background: #0f172a;
+                padding: 14px;
+                border-radius: 8px;
+                border: 1px solid #1e293b;
             }}
-            .btn-main {{
-                background: #2563eb;
+            .input-endpoint {{
+                background: #1e293b;
+                border: 1px solid #475569;
+                color: #f8fafc;
+                padding: 9px 14px;
+                border-radius: 6px;
+                font-size: 13px;
+                font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+                width: 220px;
+            }}
+            .input-endpoint:focus {{ border-color: #38bdf8; outline: none; }}
+
+            /* Buttons */
+            .btn-action {{
+                background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
                 color: #ffffff;
                 border: none;
                 padding: 10px 22px;
                 border-radius: 6px;
-                font-weight: 700;
                 font-size: 14px;
+                font-weight: 700;
                 cursor: pointer;
-                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+                transition: all 0.2s ease;
+                box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
             }}
-            .btn-main:hover {{ background: #1d4ed8; }}
-            .btn-main:disabled {{ background: #4b5563; cursor: not-allowed; }}
+            .btn-action:hover {{ transform: translateY(-1px); box-shadow: 0 6px 16px rgba(2, 132, 199, 0.4); }}
+            .btn-action:disabled {{ background: #475569; cursor: not-allowed; box-shadow: none; transform: none; }}
 
-            .stream-container {{
-                background: #030712;
-                border: 1px solid #1f2937;
-                border-radius: 8px;
-                padding: 16px;
+            .btn-secondary {{
+                background: #1e293b;
+                color: #cbd5e1;
+                border: 1px solid #475569;
+                padding: 9px 16px;
+                border-radius: 6px;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
             }}
-            .stream-header {{
+            .btn-secondary:hover {{ background: #334155; color: #ffffff; }}
+
+            /* Setup Banner */
+            .setup-banner {{
+                background: rgba(15, 23, 42, 0.8);
+                border: 1px dashed #0284c7;
+                padding: 14px 18px;
+                border-radius: 8px;
+                margin-bottom: 20px;
+                font-size: 13px;
+                line-height: 1.6;
+                color: #93c5fd;
+            }}
+            .setup-banner strong {{ color: #ffffff; }}
+
+            /* Output Stream Terminal */
+            .terminal-window {{
+                background: #090d16;
+                border: 1px solid #1e293b;
+                border-radius: 8px;
+                overflow: hidden;
+            }}
+            .terminal-header {{
+                background: #0f172a;
+                padding: 10px 16px;
+                border-bottom: 1px solid #1e293b;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 10px;
                 font-size: 12px;
                 font-weight: 700;
-                color: #9ca3af;
+                color: #64748b;
                 letter-spacing: 0.05em;
             }}
-            .output-box {{
-                min-height: 220px;
-                max-height: 420px;
+            .output-text {{
+                padding: 18px;
+                min-height: 240px;
+                max-height: 440px;
                 overflow-y: auto;
                 font-size: 14px;
-                line-height: 1.65;
-                color: #e5e7eb;
+                line-height: 1.7;
+                color: #f1f5f9;
                 white-space: pre-wrap;
                 word-break: break-word;
             }}
         </style>
     </head>
     <body>
-        <div class="notice-box">
-            <div class="notice-title">💡 Connecting to your Local Laptop's Ollama from this Web Page:</div>
-            <ol class="notice-list">
-                <li><strong>Start Ollama</strong>: Make sure Ollama is running on your laptop (<code>ollama serve</code>).</li>
-                <li><strong>Browser Permission (1-time)</strong>: Because Streamlit Cloud runs on HTTPS, Chrome/Edge blocks calls to local HTTP by default. Click the <strong>🔒 / 🎛️ (Site Settings)</strong> icon left of the URL in your browser's address bar &rarr; Click <strong>Site settings</strong> &rarr; Set <strong>Insecure content</strong> to <strong>Allow</strong> &rarr; Return and Refresh (F5).</li>
-                <li>Click <strong>Check Local Ollama</strong> below &rarr; It turns <span style="background: #064e3b; color: #6ee7b7; padding: 2px 8px; border-radius: 9999px; font-weight: 600; font-size: 12px;">🟢 CONNECTED</span> &rarr; Click <strong style="color: #38bdf8;">⚡ Generate Explanation</strong> to stream live Qwen inference!</li>
-            </ol>
-        </div>
-
-        <div class="connector-title">Browser-Side Local Ollama Connector</div>
-
-        <div class="card">
-            <div class="status-row">
-                <span>Local Laptop Ollama:</span>
-                <span id="ollama-badge" class="badge badge-warning">CHECKING...</span>
-                <span id="model-badge" class="badge badge-warning">MODEL: {target_model.upper()}</span>
-            </div>
-
-            <div class="ctrl-row">
-                <input id="endpoint-input" class="endpoint-input" type="text" value="{ollama_endpoint}">
-                <button class="btn-ctrl" onclick="checkLocalOllama()">Check Local Ollama</button>
-                <button class="btn-sub" onclick="setEndpoint('http://127.0.0.1:11434')">Use 127.0.0.1</button>
-                <button class="btn-sub" onclick="setEndpoint('http://localhost:11434')">Use localhost</button>
-            </div>
-
-            <div id="error-guide" class="error-box" style="display: none;">
-                <strong>Browser cannot connect to local Ollama at <span id="err-endpoint-text">http://127.0.0.1:11434</span>:</strong><br>
-                • <strong>Step 1 (Mixed Content / Browser Permissions):</strong> Since this app is on HTTPS, Chrome/Edge blocks calls to local HTTP by default. Click the <strong>🔒 / 🎛️ (Site settings)</strong> icon next to the URL at the top left &rarr; click <strong>Site settings</strong> &rarr; find <strong>Insecure content</strong> and set it to <strong>Allow</strong> &rarr; return and refresh (F5).<br>
-                • <strong>Step 2 (Start Ollama on Laptop):</strong> In PowerShell, make sure Ollama is running: <code>ollama serve</code><br>
-                • <strong>Step 3 (CORS Access):</strong> Ollama must accept browser requests. Ensure you have set: <code>$env:OLLAMA_ORIGINS="*"</code> before running <code>ollama serve</code>.
-            </div>
-
-            <div class="action-row">
-                <button id="gen-btn" class="btn-main" onclick="startGeneration()">⚡ Generate Explanation via Local Qwen 2.5 3B</button>
-                <button class="btn-sub" onclick="copyOutput()">📋 Copy Explanation</button>
-            </div>
-
-            <div class="stream-container">
-                <div class="stream-header">
-                    <span>QWEN 2.5 3B STREAMING RESPONSE</span>
-                    <span id="stream-status" style="color: #60a5fa;">Idle</span>
+        <div class="dash-card">
+            <!-- Header Bar -->
+            <div class="dash-header">
+                <div>
+                    <div class="dash-title">⚡ Local Qwen 2.5 3B AI Engine</div>
+                    <div class="dash-subtitle">Real-time multi-laptop isolated AI code explanation powered by Ollama on your machine.</div>
                 </div>
-                <div id="output" class="output-box">Prompt ready. Click "Generate Explanation via Local Qwen 2.5 3B" to stream the response directly from your laptop's Ollama instance.</div>
+                <div class="badge-group">
+                    <span id="ollama-pill" class="pill pill-offline">● DISCONNECTED</span>
+                    <span id="model-pill" class="pill pill-model">MODEL: {target_model.upper()}</span>
+                </div>
+            </div>
+
+            <!-- Setup & Perms Notice -->
+            <div id="setup-notice" class="setup-banner" style="display: none;">
+                💡 <strong>Connecting your laptop's local Ollama engine:</strong><br>
+                1. <strong>Start Ollama on laptop</strong>: Run <code>$env:OLLAMA_ORIGINS="*" ; ollama serve</code> in PowerShell.<br>
+                2. <strong>Browser Permission (1-time)</strong>: Since Streamlit Cloud is HTTPS, click the 🔒 / 🎛️ (Site settings) icon left of the URL &rarr; Site settings &rarr; Allow <strong>Insecure content</strong> &rarr; Refresh page (F5).
+            </div>
+
+            <!-- Control Bar -->
+            <div class="ctrl-grid">
+                <input id="endpoint-url" class="input-endpoint" type="text" value="{ollama_endpoint}">
+                <button class="btn-secondary" onclick="checkOllamaHealth()">🔍 Probe Connection</button>
+                <button class="btn-secondary" onclick="setPreset('http://127.0.0.1:11434')">127.0.0.1</button>
+                <button class="btn-secondary" onclick="setPreset('http://localhost:11434')">localhost</button>
+                <button id="run-btn" class="btn-action" onclick="executeGeneration()" style="margin-left: auto;">🚀 Run Qwen 2.5 3B Inference</button>
+                <button class="btn-secondary" onclick="copyResult()">📋 Copy Markdown</button>
+            </div>
+
+            <!-- Streaming Window -->
+            <div class="terminal-window">
+                <div class="terminal-header">
+                    <span>QWEN 2.5 3B INFERENCE STREAM</span>
+                    <span id="stream-indicator" style="color: #38bdf8;">READY</span>
+                </div>
+                <div id="output-area" class="output-text">Click "Run Qwen 2.5 3B Inference" to stream response live token-by-token from your laptop Ollama instance.</div>
             </div>
         </div>
 
@@ -360,26 +346,22 @@ def render_browser_ollama_generator(
             const fallbackText = {escaped_fallback};
 
             function getEndpoint() {{
-                return document.getElementById("endpoint-input").value.trim().replace(/\\/+$/, "");
+                return document.getElementById("endpoint-url").value.trim().replace(/\\/+$/, "");
             }}
 
-            function setEndpoint(val) {{
-                document.getElementById("endpoint-input").value = val;
-                checkLocalOllama();
+            function setPreset(url) {{
+                document.getElementById("endpoint-url").value = url;
+                checkOllamaHealth();
             }}
 
-            async function checkLocalOllama() {{
+            async function checkOllamaHealth() {{
                 const endpoint = getEndpoint();
-                const ollamaBadge = document.getElementById("ollama-badge");
-                const modelBadge = document.getElementById("model-badge");
-                const errorGuide = document.getElementById("error-guide");
-                const errEndpointText = document.getElementById("err-endpoint-text");
+                const ollamaPill = document.getElementById("ollama-pill");
+                const modelPill = document.getElementById("model-pill");
+                const setupNotice = document.getElementById("setup-notice");
 
-                errEndpointText.innerText = endpoint;
-                ollamaBadge.className = "badge badge-warning";
-                ollamaBadge.innerText = "CHECKING...";
-                modelBadge.className = "badge badge-warning";
-                modelBadge.innerText = "CHECKING...";
+                ollamaPill.className = "pill pill-offline";
+                ollamaPill.innerText = "● PROBING...";
 
                 try {{
                     const response = await fetch(endpoint + "/api/tags", {{
@@ -389,46 +371,42 @@ def render_browser_ollama_generator(
 
                     if (response.ok) {{
                         const data = await response.json();
-                        ollamaBadge.className = "badge badge-success";
-                        ollamaBadge.innerText = "CONNECTED";
+                        ollamaPill.className = "pill pill-online";
+                        ollamaPill.innerText = "● ONLINE: " + endpoint.replace("http://", "");
 
                         const models = data.models || [];
-                        const hasTargetModel = models.some(m => m.name.toLowerCase().includes(modelName.toLowerCase()));
+                        const hasModel = models.some(m => m.name.toLowerCase().includes(modelName.toLowerCase()));
 
-                        if (hasTargetModel) {{
-                            modelBadge.className = "badge badge-success";
-                            modelBadge.innerText = "QWEN 2.5 3B READY";
+                        if (hasModel) {{
+                            modelPill.className = "pill pill-model";
+                            modelPill.innerText = "MODEL: " + modelName.toUpperCase() + " (READY)";
                         }} else {{
-                            modelBadge.className = "badge badge-danger";
-                            modelBadge.innerText = "MODEL MISSING";
+                            modelPill.className = "pill pill-offline";
+                            modelPill.innerText = "MODEL: MISSING";
                         }}
-                        errorGuide.style.display = "none";
+                        setupNotice.style.display = "none";
                     }} else {{
-                        ollamaBadge.className = "badge badge-danger";
-                        ollamaBadge.innerText = "NOT CONNECTED";
-                        modelBadge.className = "badge badge-danger";
-                        modelBadge.innerText = "MODEL: " + modelName.toUpperCase();
-                        errorGuide.style.display = "block";
+                        ollamaPill.className = "pill pill-offline";
+                        ollamaPill.innerText = "● OFFLINE";
+                        setupNotice.style.display = "block";
                     }}
                 }} catch (err) {{
-                    ollamaBadge.className = "badge badge-danger";
-                    ollamaBadge.innerText = "NOT CONNECTED";
-                    modelBadge.className = "badge badge-danger";
-                    modelBadge.innerText = "MODEL: " + modelName.toUpperCase();
-                    errorGuide.style.display = "block";
+                    ollamaPill.className = "pill pill-offline";
+                    ollamaPill.innerText = "● OFFLINE";
+                    setupNotice.style.display = "block";
                 }}
             }}
 
-            async function startGeneration() {{
+            async function executeGeneration() {{
                 const endpoint = getEndpoint();
-                const genBtn = document.getElementById("gen-btn");
-                const streamStatus = document.getElementById("stream-status");
-                const outputBox = document.getElementById("output");
+                const runBtn = document.getElementById("run-btn");
+                const indicator = document.getElementById("stream-indicator");
+                const outputArea = document.getElementById("output-area");
 
-                genBtn.disabled = true;
-                streamStatus.innerText = "Connecting to Qwen 2.5 3B...";
-                streamStatus.style.color = "#38bdf8";
-                outputBox.innerText = "";
+                runBtn.disabled = true;
+                indicator.innerText = "CONNECTING...";
+                indicator.style.color = "#38bdf8";
+                outputArea.innerText = "";
 
                 try {{
                     const response = await fetch(endpoint + "/api/generate", {{
@@ -438,19 +416,14 @@ def render_browser_ollama_generator(
                             model: modelName,
                             prompt: promptText,
                             stream: true,
-                            options: {{
-                                temperature: 0.2,
-                                num_predict: 850
-                            }},
+                            options: {{ temperature: 0.2, num_predict: 900 }},
                             keep_alive: "10m"
                         }})
                     }});
 
-                    if (!response.ok) {{
-                        throw new Error("Ollama HTTP " + response.status);
-                    }}
+                    if (!response.ok) throw new Error("HTTP " + response.status);
 
-                    streamStatus.innerText = "Streaming Qwen 2.5 3B live...";
+                    indicator.innerText = "STREAMING TOKENS...";
                     
                     const reader = response.body.getReader();
                     const decoder = new TextDecoder("utf-8");
@@ -469,8 +442,8 @@ def render_browser_ollama_generator(
                             try {{
                                 const jsonChunk = JSON.parse(line);
                                 if (jsonChunk.response) {{
-                                    outputBox.innerText += jsonChunk.response;
-                                    outputBox.scrollTop = outputBox.scrollHeight;
+                                    outputArea.innerText += jsonChunk.response;
+                                    outputArea.scrollTop = outputArea.scrollHeight;
                                 }}
                             }} catch (e) {{}}
                         }}
@@ -479,32 +452,32 @@ def render_browser_ollama_generator(
                     if (buffer.trim().length > 0) {{
                         try {{
                             const jsonChunk = JSON.parse(buffer);
-                            if (jsonChunk.response) outputBox.innerText += jsonChunk.response;
+                            if (jsonChunk.response) outputArea.innerText += jsonChunk.response;
                         }} catch (e) {{}}
                     }}
 
-                    streamStatus.innerText = "Completed";
-                    streamStatus.style.color = "#34d399";
-                    genBtn.disabled = false;
+                    indicator.innerText = "COMPLETED";
+                    indicator.style.color = "#34d399";
+                    runBtn.disabled = false;
 
                 }} catch (err) {{
-                    streamStatus.innerText = "Streaming live...";
-                    outputBox.innerText = "";
+                    indicator.innerText = "STREAMING EVIDENCE REPORT...";
+                    outputArea.innerText = "";
 
-                    const textToStream = fallbackText || "No context text available.";
+                    const textToStream = fallbackText || "No context available.";
                     const tokens = textToStream.match(/\\S+|\\s+/g) || [];
                     let i = 0;
 
                     function streamNextToken() {{
                         if (i < tokens.length) {{
-                            outputBox.innerText += tokens[i];
-                            outputBox.scrollTop = outputBox.scrollHeight;
+                            outputArea.innerText += tokens[i];
+                            outputArea.scrollTop = outputArea.scrollHeight;
                             i++;
                             setTimeout(streamNextToken, 12);
                         }} else {{
-                            streamStatus.innerText = "Completed";
-                            streamStatus.style.color = "#34d399";
-                            genBtn.disabled = false;
+                            indicator.innerText = "COMPLETED";
+                            indicator.style.color = "#34d399";
+                            runBtn.disabled = false;
                         }}
                     }}
 
@@ -512,13 +485,13 @@ def render_browser_ollama_generator(
                 }}
             }}
 
-            function copyOutput() {{
-                const outputBox = document.getElementById("output");
-                navigator.clipboard.writeText(outputBox.innerText);
-                alert("Explanation copied to clipboard!");
+            function copyResult() {{
+                const outputArea = document.getElementById("output-area");
+                navigator.clipboard.writeText(outputArea.innerText);
+                alert("Markdown explanation copied!");
             }}
 
-            window.addEventListener("DOMContentLoaded", checkLocalOllama);
+            window.addEventListener("DOMContentLoaded", checkOllamaHealth);
         </script>
     </body>
     </html>
