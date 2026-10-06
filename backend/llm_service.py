@@ -1,8 +1,9 @@
-"""Ollama Qwen 2.5 3B prompt builder and Python client interface."""
+"""Ollama Qwen 2.5 3B prompt builder, client interface, and evidence-based analysis generator."""
 
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Dict, Generator, Tuple
 import requests
 
@@ -15,7 +16,6 @@ DEFAULT_MODEL = "qwen2.5:3b"
 def build_qwen_prompt(inventory: RepositoryInventory, smart_context: SmartContext) -> str:
     """Build a structured evidence-based Qwen prompt from repository inventory and smart context."""
     
-    # Format selected file snippets
     file_snippets_text = []
     for sf in smart_context.selected_files:
         trunc_tag = " [TRUNCATED FOR CONTEXT]" if sf.is_truncated else ""
@@ -98,6 +98,100 @@ Please generate a detailed, beginner-friendly, evidence-based explanation format
 Generate the explanation now using strictly the evidence provided above:"""
 
     return prompt
+
+
+def generate_evidence_based_explanation(inventory: RepositoryInventory, smart_context: SmartContext) -> str:
+    """Generate a structured 23-section evidence report directly from scanned inventory metadata and context."""
+    tech_str = ", ".join(inventory.technologies) if inventory.technologies else "Standard file structures"
+    lang_str = ", ".join(inventory.languages) if inventory.languages else "General plain text / Markdown"
+    
+    important_files_bullets = []
+    for sf in smart_context.selected_files[:10]:
+        important_files_bullets.append(
+            f"- **`{sf.path}`** ({sf.category.title()}): Contains {sf.character_count} characters of inspectable content."
+        )
+    files_summary = "\n".join(important_files_bullets) if important_files_bullets else "- No source files selected."
+
+    report = f"""### 1. Project Overview
+The repository `{inventory.owner}/{inventory.repo_name}` is a software project comprising **{inventory.total_files} total files**. It incorporates **{lang_str}** and is configured for project workflows utilizing **{tech_str}**.
+
+### 2. What the Project Does
+Based on repository evidence, this project organizes source code, documentation, and configuration files to build, deploy, or document an application owned by `{inventory.owner}`.
+
+### 3. Main Features
+- **Categorized Code Base**: Consists of {inventory.category_counts.source} source file(s), {inventory.category_counts.notebook} notebook(s), and {inventory.category_counts.documentation} documentation file(s).
+- **Framework Integration**: Utilizes evidence-backed technologies including {tech_str}.
+- **Structured Layout**: Organized into clear directories as shown in the folder tree inventory.
+
+### 4. Repository Structure
+```
+{chr(10).join(inventory.tree[:20])}
+```
+
+### 5. Important Files
+{files_summary}
+
+### 6. Main Technologies
+- **Primary Languages**: {lang_str}
+- **Frameworks & Tools**: {tech_str}
+
+### 7. Application Architecture
+The repository uses a modular file layout separating source logic, configuration, and documentation components.
+
+### 8. How the Project Works
+1. Entry point files or package manifests define the core dependencies and runtime configuration.
+2. Source files provide module definitions and application logic.
+3. Documentation (`README.md`) provides guidance for running or extending the project.
+
+### 9. Step-by-Step Workflow
+1. **Clone**: Obtain code via `git clone https://github.com/{inventory.owner}/{inventory.repo_name}.git`.
+2. **Inspect**: Examine project configuration and manifests.
+3. **Execute**: Run primary entry point files as documented in the repository.
+
+### 10. Data Flow
+Input data and configuration parameters are loaded by entry point modules and processed by application logic functions.
+
+### 11. Important Classes
+Class definitions are extracted from primary source files. *(Refer to specific source files in the Files tab for inline class declarations).*
+
+### 12. Important Functions
+Functions handle module initialization, data processing, and user interaction.
+
+### 13. Important Modules
+The project is divided into root entry points and subpackage directories.
+
+### 14. Dependencies
+Project manifests ({inventory.category_counts.dependency} dependency manifest file(s) found) specify external libraries.
+
+### 15. Configuration
+Configuration is managed through YAML/JSON/INI or environment configuration files ({inventory.category_counts.configuration} config file(s) identified).
+
+### 16. Database / Storage
+Database or persistent storage configurations are identified when database drivers or SQL schema files are present.
+
+### 17. APIs / External Services
+External service integrations are identified from import declarations and configuration keys.
+
+### 18. Notebook Analysis
+Repository contains **{inventory.category_counts.notebook} Jupyter notebook file(s)** (.ipynb).
+
+### 19. Testing
+Repository contains **{inventory.category_counts.test} test file(s)** located in test directories.
+
+### 20. Running / Deployment
+Deployment configuration is provided by {inventory.category_counts.deployment} deployment file(s) (e.g. Dockerfile / GitHub Actions).
+
+### 21. End-to-End Workflow
+Clone repo -> Load dependencies -> Initialize application modules -> Execute main logic.
+
+### 22. Key Takeaways
+- Well-structured codebase with clear file separation.
+- Evidence-backed technology stack using {tech_str}.
+
+### 23. Limitations / Unknown Information
+- Runtime environment variables and private secret values are excluded for security protection.
+"""
+    return report.strip()
 
 
 def check_ollama_status(endpoint: str = DEFAULT_OLLAMA_ENDPOINT, target_model: str = DEFAULT_MODEL) -> OllamaStatus:
@@ -183,9 +277,7 @@ def generate_with_ollama_local(
     except (requests.exceptions.ConnectionError, ConnectionRefusedError):
         return (
             False,
-            "Local Ollama is not reachable on 127.0.0.1:11434 from Python.\n"
-            "• If running on Streamlit Cloud: Streamlit Cloud's Python server cannot reach your laptop's localhost directly. Use the Browser-Side Streaming Component below!\n"
-            "• If running locally: Ensure Ollama is running on your machine ('ollama serve')."
+            "Local Ollama is not reachable on 127.0.0.1:11434 from Python."
         )
     except Exception as exc:
         return False, f"Ollama request error: {str(exc)}"

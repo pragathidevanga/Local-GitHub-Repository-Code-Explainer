@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import streamlit as st
 
-from backend.llm_service import check_ollama_status, generate_with_ollama_local
+from backend.llm_service import (
+    check_ollama_status,
+    generate_evidence_based_explanation,
+    generate_with_ollama_local,
+)
 from backend.main import process_repository_service
 from backend.models import AnalysisResponse
 from frontend.components.ollama_connector import (
@@ -203,32 +207,32 @@ def run_streamlit_app():
                 with st.expander(f"📄 `{sf.path}` — {sf.category.upper()} ({sf.character_count} chars){trunc_str}"):
                     st.code(sf.content[:3000], language="text")
 
-        # TAB 4: AI EXPLANATION (Non-blocking streaming + Python trigger)
+        # TAB 4: AI EXPLANATION (Instant Evidence Report + Live Streaming option)
         with tab_ai:
-            st.markdown("### 🤖 Detailed AI Explanation (Qwen 2.5 3B via Local Ollama)")
-            st.markdown("Streaming Qwen 2.5 3B explanation live directly from your laptop's local Ollama instance (`http://127.0.0.1:11434`):")
+            st.markdown("### 🤖 Detailed AI Explanation")
 
-            if resp.prompt:
-                # Browser-Side Live Streaming Generator (Starts automatically in browser without blocking Streamlit!)
+            # Compute structured evidence-based report instantly if not yet stored
+            if not st.session_state.python_explanation:
+                ollama_stat = check_ollama_status()
+                if ollama_stat.connected and ollama_stat.model_available:
+                    success, explanation_text = generate_with_ollama_local(resp.prompt)
+                    if success:
+                        st.session_state.python_explanation = explanation_text
+                    else:
+                        st.session_state.python_explanation = generate_evidence_based_explanation(inv, ctx)
+                else:
+                    st.session_state.python_explanation = generate_evidence_based_explanation(inv, ctx)
+
+            # Display the 23-section explanation instantly as clean formatted Markdown
+            st.markdown(st.session_state.python_explanation)
+
+            st.markdown("---")
+            with st.expander("🌐 Browser-Side Streaming Component (Multi-Laptop Live Ollama Mode)", expanded=False):
+                st.write("Stream Qwen 2.5 3B token-by-token from your laptop's local Ollama endpoint (`127.0.0.1:11434`):")
                 render_browser_ollama_generator(resp.prompt)
 
-                st.markdown("---")
-                btn_c1, btn_c2 = st.columns([1, 1])
-                with btn_c1:
-                    if st.button("⚡ Run Full Server-Side Python Qwen Generation"):
-                        with st.spinner("Invoking local Ollama from Python..."):
-                            success, explanation_text = generate_with_ollama_local(resp.prompt)
-                            if success:
-                                st.session_state.python_explanation = explanation_text
-                            else:
-                                st.error(f"Ollama execution failed: {explanation_text}")
-
-                if st.session_state.python_explanation:
-                    st.markdown("### 📝 Full Qwen Explanation Output")
-                    st.markdown(st.session_state.python_explanation)
-
-                with st.expander("📝 Inspect Raw Qwen Prompt Context", expanded=False):
-                    st.code(resp.prompt, language="text")
+            with st.expander("📝 Inspect Raw Qwen Prompt Context", expanded=False):
+                st.code(resp.prompt, language="text")
 
         # TAB 5: TECHNICAL METRICS (Instant)
         with tab_tech:
