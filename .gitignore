@@ -1,15 +1,52 @@
-.venv/
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+.venv
+venv/
+ENV/
+
+# Testing & Coverage
 .pytest_cache/
-.mypy_cache/
-.ruff_cache/
+.coverage
+htmlcov/
+
+# Sensitive files & Environment variables
 .env
-.env.*
-!.env.example
-.streamlit/secrets.toml
-repositories/*
-!repositories/.gitkeep
-*.log
+.env.local
+.env.*.local
+*.pem
+*.key
+*.pub
+id_rsa
+secrets.json
+service_account.json
+
+# Temporary clone directories
+repo_explainer_*
+
+# IDE & OS
+.vscode/
+.idea/
 .DS_Store
 Thumbs.db

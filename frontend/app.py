@@ -1,199 +1,254 @@
+"""Streamlit UI implementation for Local GitHub Repository Code Explainer."""
+
 from __future__ import annotations
 
-import os
-import time
-from typing import Any
-
-import requests
 import streamlit as st
 
-st.set_page_config(
-    page_title="Repository Code Explainer",
-    page_icon="🧠",
-    layout="wide",
-    initial_sidebar_state="expanded",
+from backend.llm_service import check_ollama_status, generate_with_ollama_local
+from backend.main import process_repository_service
+from backend.models import AnalysisResponse
+from frontend.components.ollama_connector import (
+    render_browser_ollama_generator,
+    render_ollama_status_widget,
 )
+from frontend.styles import apply_custom_css
 
-BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000").rstrip("/")
-API_URL = f"{BACKEND_URL}/api/analyze"
+EXAMPLE_REPOSITORIES = [
+    ("octocat/Hello-World", "https://github.com/octocat/Hello-World"),
+    ("streamlit/streamlit-example", "https://github.com/streamlit/streamlit-example"),
+    ("psf/requests", "https://github.com/psf/requests"),
+    ("fastapi/fastapi", "https://github.com/fastapi/fastapi"),
+]
 
 
-def inject_css() -> None:
+def run_streamlit_app():
+    """Main Streamlit UI application entrypoint."""
+    st.set_page_config(
+        page_title="Local GitHub Repository Code Explainer",
+        page_icon="⚡",
+        layout="wide",
+        initial_sidebar_state="collapsed",
+    )
+
+    apply_custom_css()
+
+    # Title Header Banner
     st.markdown(
         """
-        <style>
-        .hero {padding: 18px 20px; border-radius: 18px; border: 1px solid rgba(100,100,100,.18); background: linear-gradient(135deg, rgba(99,102,241,.12), rgba(20,184,166,.09));}
-        .hero h1 {margin: 0; font-size: 2.25rem;}
-        .hero p {margin: 8px 0 0 0; opacity: .8;}
-        .badge {display:inline-block; padding:4px 10px; margin:6px 6px 0 0; border-radius:999px; border:1px solid rgba(100,100,100,.25); font-size:.85rem;}
-        .small {font-size:.86rem; opacity:.75;}
-        .filecard {padding:10px 12px; border-radius:10px; border:1px solid rgba(100,100,100,.15); margin-bottom:8px;}
-        </style>
+        <div class="header-box">
+            <h1 class="header-title">LOCAL GITHUB REPOSITORY CODE EXPLAINER</h1>
+            <p class="header-subtitle">Analyze ANY public GitHub repository using local Ollama + Qwen 2.5 3B on your laptop</p>
+            <div>
+                <span class="feature-pill">⚡ Low Latency</span>
+                <span class="feature-pill">🔒 Local Inference</span>
+                <span class="feature-pill">🛡️ Secret Protection</span>
+                <span class="feature-pill">💻 Multi-Laptop Isolated</span>
+                <span class="feature-pill">📚 23-Section Explanation</span>
+            </div>
+        </div>
         """,
         unsafe_allow_html=True,
     )
 
+    # First-Time Setup Instructions (Expandable)
+    with st.expander("📌 First-Time Setup & Laptop Configuration Guide", expanded=False):
+        st.markdown(
+            """
+            ### How to run local AI inference on your own laptop:
+            1. **Install Ollama**: Download from [ollama.com](https://ollama.com).
+            2. **Download Qwen 2.5 3B**: Open terminal / PowerShell and run:
+               ```bash
+               ollama pull qwen2.5:3b
+               ```
+            3. **Start Ollama with Allowed Origins (`OLLAMA_ORIGINS`)**:
+               - **Windows (PowerShell)**: `$env:OLLAMA_ORIGINS="*" ; ollama serve`
+               - **macOS / Linux**: `OLLAMA_ORIGINS="*" ollama serve`
+            4. **Analyze Repository**: Paste any public HTTPS GitHub URL below and click **Analyze Repository**.
+            """
+        )
 
-def human_size(n: int) -> str:
-    value = float(n)
-    for unit in ["B", "KB", "MB", "GB"]:
-        if value < 1024:
-            return f"{value:.1f} {unit}"
-        value /= 1024
-    return f"{value:.1f} TB"
+    # Browser-side Ollama probe widget
+    render_ollama_status_widget()
 
+    # Input Form Container
+    st.markdown("### 🔗 Enter Public GitHub Repository URL")
+    
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        repo_url = st.text_input(
+            "GitHub Repository URL",
+            placeholder="https://github.com/username/repository",
+            label_visibility="collapsed",
+            key="input_repo_url",
+        )
+    with col2:
+        analyze_btn = st.button("🚀 Analyze Repository", use_container_width=True, type="primary")
 
-def get_json(url: str, timeout: float = 10) -> dict[str, Any]:
-    response = requests.get(url, timeout=timeout)
-    response.raise_for_status()
-    return response.json()
+    # Quick Sample Repositories Row
+    st.markdown("**Try a sample public repository:**")
+    sample_cols = st.columns(len(EXAMPLE_REPOSITORIES))
+    for idx, (label, sample_url) in enumerate(EXAMPLE_REPOSITORIES):
+        if sample_cols[idx].button(f"📦 {label}", key=f"sample_{idx}", use_container_width=True):
+            st.session_state.input_repo_url = sample_url
+            st.rerun()
 
+    # Session state initialization
+    if "analysis_response" not in st.session_state:
+        st.session_state.analysis_response = None
+    if "python_explanation" not in st.session_state:
+        st.session_state.python_explanation = None
 
-def start_job(repository_url: str) -> dict[str, Any]:
-    response = requests.post(API_URL, json={"github_url": repository_url.strip()}, timeout=(10, 20))
-    if response.status_code >= 400:
-        try:
-            detail = response.json().get("detail", response.text)
-        except ValueError:
-            detail = response.text
-        raise RuntimeError(str(detail))
-    return response.json()
+    target_url = repo_url or st.session_state.get("input_repo_url", "")
 
+    if analyze_btn and target_url:
+        with st.spinner("Cloning repository (shallow), scanning inventory, and building smart context..."):
+            response: AnalysisResponse = process_repository_service(target_url.strip())
+            st.session_state.analysis_response = response
+            st.session_state.python_explanation = None  # Reset for new repository
 
-def poll_job(job_id: str, max_wait: int = 900) -> dict[str, Any]:
-    status_url = f"{BACKEND_URL}/api/jobs/{job_id}"
-    progress = st.progress(0, text="Starting analysis...")
-    status_box = st.empty()
-    started = time.time()
-    last = None
-    while time.time() - started < max_wait:
-        data = get_json(status_url, timeout=15)
-        current = (data.get("progress"), data.get("stage"), data.get("message"))
-        if current != last:
-            progress.progress(int(data.get("progress", 0)), text=data.get("message", "Analyzing..."))
-            status_box.caption(f"Stage: {data.get('stage', 'working')} · Elapsed: {data.get('elapsed_seconds', 0)} s")
-            last = current
-        if data.get("status") == "completed":
-            progress.progress(100, text="Analysis complete")
-            return data
-        if data.get("status") == "failed":
-            raise RuntimeError(data.get("error") or data.get("message") or "Analysis failed")
-        time.sleep(1.2)
-    raise TimeoutError("The analysis is still running after 15 minutes. Please refresh and try a smaller repository.")
+    resp: AnalysisResponse | None = st.session_state.analysis_response
 
-
-def render_report(data: dict[str, Any]) -> None:
-    report = data["report"]
-    st.success("Repository explanation generated by the local LLM.")
-    metrics = [
-        ("Files", report["total_files"]),
-        ("Source", report["source_files"]),
-        ("Notebooks", report["notebook_files"]),
-        ("Docs", report["documentation_files"]),
-        ("Config", report["configuration_files"]),
-        ("Data / Schema", report["data_schema_files"]),
-        ("Tests", report["test_files"]),
-        ("Assets", report["asset_files"]),
-    ]
-    cols = st.columns(4)
-    for i, (label, value) in enumerate(metrics):
-        cols[i % 4].metric(label, value)
-
-    tabs = st.tabs(["AI Explanation", "Overview", "Repository Structure", "Files & Folders", "Technical Details"])
-
-    with tabs[0]:
-        st.markdown(data["explanation"])
-
-    with tabs[1]:
-        st.subheader("Repository Overview")
-        st.write(f"**Repository:** {report['owner']}/{report['repository']}")
-        st.write(f"**Default branch:** {report.get('default_branch') or 'unknown'}")
-        st.write(f"**URL:** {report['url']}")
-        st.subheader("Languages")
-        st.json(report["languages"])
-        st.subheader("Detected Technologies")
-        if report["technologies"]:
-            st.write(" · ".join(report["technologies"]))
-        else:
-            st.info("No technology could be confidently detected from the supplied evidence.")
-
-    with tabs[2]:
-        st.subheader("Folder Tree")
-        st.code("\n".join(report["folder_tree"][:400]) or "No folder tree available.")
-
-    with tabs[3]:
-        st.subheader("Analyzed File Inventory")
-        for item in report["files"]:
-            with st.container(border=True):
-                st.markdown(f"**{item['path']}**")
-                st.caption(f"{item['category']} · {item.get('language') or 'unknown'} · {human_size(item['size'])}")
-                if item.get("summary"):
-                    st.write(item["summary"])
-
-    with tabs[4]:
-        st.subheader("LLM Context Optimization")
-        st.write(f"Selected files for local model: **{len(report['context_files'])}**")
-        st.write(f"LLM context size: **{report['context_characters']:,} characters**")
-        st.write("The full repository is inventoried, but only the most relevant readable evidence is sent to the local model to reduce latency.")
-        st.code("\n".join(report["context_files"]) or "No readable context files selected.")
-        st.subheader("Performance")
-        st.json(data.get("timings", {}))
-
-
-def main(local_backend_ready: bool | None = None) -> None:
-    inject_css()
-    st.markdown(
-        '<div class="hero"><h1>🧠 REPOSITORY CODE EXPLAINER</h1><p>Understand any public GitHub repository in simple language using a locally running open-source model.</p>'
-        '<span class="badge">FastAPI</span><span class="badge">Streamlit</span><span class="badge">GitPython</span><span class="badge">Hugging Face Transformers</span><span class="badge">SmolLM2 135M</span></div>',
-        unsafe_allow_html=True,
-    )
-
-    with st.sidebar:
-        st.header("Local GenAI Pipeline")
-        st.write("GitHub → GitPython → Repository Analyzer → Smart Context → Local Transformers Model → Explanation")
-        st.caption(f"Backend: {BACKEND_URL}")
-        try:
-            health = get_json(f"{BACKEND_URL}/api/health", timeout=5)
-            if health.get("local_llm_available"):
-                if health.get("model_loaded"):
-                    st.success(f"Local model loaded · {health.get('model', 'local model')}")
-                else:
-                    st.info(f"Local model ready; it will download/load on first analysis · {health.get('model', 'local model')}")
-            else:
-                st.error("The local Hugging Face inference dependencies are unavailable. Check requirements.txt and redeploy.")
-        except Exception:
-            if local_backend_ready is False and BACKEND_URL.startswith(("http://127.0.0.1", "http://localhost")):
-                st.error("FastAPI backend could not be started. Run: uvicorn backend.main:app --host 127.0.0.1 --port 8000")
-            else:
-                st.error("The embedded FastAPI backend could not be started. Refresh the app and try again.")
-        st.divider()
-        st.write("Only public HTTPS GitHub repositories are accepted. Repository code is never executed, and sensitive file contents are withheld from the local model.")
-
-    st.subheader("Explain this GitHub Repository")
-    repository_url = st.text_input(
-        "GitHub repository URL",
-        placeholder="https://github.com/username/repository",
-        help="Any public GitHub repository can be analyzed.",
-    )
-    analyze = st.button("🚀 Analyze Repository", type="primary", use_container_width=True)
-
-    if analyze:
-        if not repository_url.strip():
-            st.error("Please enter a GitHub repository URL.")
+    if resp:
+        if not resp.success:
+            st.error(f"❌ Analysis Failed: {resp.error}")
             return
-        try:
-            queued = start_job(repository_url)
-            result = poll_job(queued["job_id"])
-            render_report(result)
-        except requests.Timeout:
-            st.error("The backend request timed out before a job could be started. Check that FastAPI is reachable.")
-        except requests.RequestException as exc:
-            st.error(f"Cannot reach the FastAPI backend: {exc}")
-        except TimeoutError as exc:
-            st.warning(str(exc))
-        except Exception as exc:
-            st.error(str(exc))
 
+        inv = resp.inventory
+        ctx = resp.smart_context
 
-if __name__ == "__main__":
-    main()
+        if not inv or not ctx:
+            st.error("Invalid response data structure.")
+            return
+
+        st.success(f"✅ Repository analyzed successfully: **{inv.owner}/{inv.repo_name}** ({inv.total_files} total files scanned in {resp.timing.total_ms:.1f}ms)")
+
+        # Main Navigation Tabs - ALL RENDER INSTANTLY NOW
+        tab_overview, tab_structure, tab_files, tab_ai, tab_tech = st.tabs([
+            "📊 Overview",
+            "📁 Repository Structure",
+            "📄 Files & Categories",
+            "🤖 AI Explanation (Qwen 2.5 3B)",
+            "⏱️ Technical Metrics",
+        ])
+
+        # TAB 1: OVERVIEW (Instant)
+        with tab_overview:
+            st.markdown(f"### Repository Overview: `{inv.owner}/{inv.repo_name}`")
+            
+            # Key statistics metric row
+            m1, m2, m3, m4, m5 = st.columns(5)
+            m1.metric("Total Files", inv.total_files)
+            m2.metric("Source Code", inv.category_counts.source)
+            m3.metric("Notebooks", inv.category_counts.notebook)
+            m4.metric("Docs / Config", inv.category_counts.documentation + inv.category_counts.configuration)
+            m5.metric("Context Files", ctx.file_count)
+
+            st.markdown("---")
+            c_left, c_right = st.columns(2)
+
+            with c_left:
+                st.markdown("#### Detected Languages")
+                if inv.languages:
+                    for lang in inv.languages:
+                        st.markdown(f"- **{lang}**")
+                else:
+                    st.write("No specific source code languages detected.")
+
+            with c_right:
+                st.markdown("#### Detected Technologies & Frameworks")
+                if inv.technologies:
+                    chips_html = "".join([f'<span class="tech-chip">{t}</span>' for t in inv.technologies])
+                    st.markdown(chips_html, unsafe_allow_html=True)
+                else:
+                    st.write("No specific framework manifests detected.")
+
+            if inv.sensitive_files_found:
+                st.markdown(
+                    f"""
+                    <div class="security-callout">
+                        🛡️ <strong>Security Alert</strong>: Discovered {len(inv.sensitive_files_found)} sensitive file(s) (e.g. .env, credentials). Secret values have been automatically shielded and excluded from AI context.
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+        # TAB 2: STRUCTURE (Instant)
+        with tab_structure:
+            st.markdown("### 📁 Repository Folder Tree")
+            tree_text = "\n".join(inv.tree)
+            st.code(tree_text, language="text")
+
+        # TAB 3: FILES (Instant)
+        with tab_files:
+            st.markdown("### 📄 Categorized File Breakdown")
+            cat_data = {
+                "Source Code": inv.category_counts.source,
+                "Jupyter Notebooks": inv.category_counts.notebook,
+                "Documentation": inv.category_counts.documentation,
+                "Configuration": inv.category_counts.configuration,
+                "Dependency Manifests": inv.category_counts.dependency,
+                "Web (HTML/CSS)": inv.category_counts.web,
+                "Data & Schema": inv.category_counts.data_schema,
+                "Tests": inv.category_counts.test,
+                "Deployment / CI-CD": inv.category_counts.deployment,
+                "Binary / Assets": inv.category_counts.binary,
+                "Unknown Text": inv.category_counts.unknown_text,
+            }
+            st.json(cat_data)
+
+            st.markdown("#### Selected Model Context Files")
+            st.info(f"Smart Context selected {ctx.file_count} top priority files ({ctx.total_characters} characters) out of {inv.total_files} total files for Qwen 2.5 3B model context.")
+            for sf in ctx.selected_files:
+                trunc_str = " (Truncated for length)" if sf.is_truncated else ""
+                with st.expander(f"📄 `{sf.path}` — {sf.category.upper()} ({sf.character_count} chars){trunc_str}"):
+                    st.code(sf.content[:3000], language="text")
+
+        # TAB 4: AI EXPLANATION (Non-blocking streaming + Python trigger)
+        with tab_ai:
+            st.markdown("### 🤖 Detailed AI Explanation (Qwen 2.5 3B via Local Ollama)")
+            st.markdown("Streaming Qwen 2.5 3B explanation live directly from your laptop's local Ollama instance (`http://127.0.0.1:11434`):")
+
+            if resp.prompt:
+                # Browser-Side Live Streaming Generator (Starts automatically in browser without blocking Streamlit!)
+                render_browser_ollama_generator(resp.prompt)
+
+                st.markdown("---")
+                btn_c1, btn_c2 = st.columns([1, 1])
+                with btn_c1:
+                    if st.button("⚡ Run Full Server-Side Python Qwen Generation"):
+                        with st.spinner("Invoking local Ollama from Python..."):
+                            success, explanation_text = generate_with_ollama_local(resp.prompt)
+                            if success:
+                                st.session_state.python_explanation = explanation_text
+                            else:
+                                st.error(f"Ollama execution failed: {explanation_text}")
+
+                if st.session_state.python_explanation:
+                    st.markdown("### 📝 Full Qwen Explanation Output")
+                    st.markdown(st.session_state.python_explanation)
+
+                with st.expander("📝 Inspect Raw Qwen Prompt Context", expanded=False):
+                    st.code(resp.prompt, language="text")
+
+        # TAB 5: TECHNICAL METRICS (Instant)
+        with tab_tech:
+            st.markdown("### ⏱️ Performance Metrics & Timing Breakdown")
+            t = resp.timing
+            
+            col_t1, col_t2, col_t3, col_t4 = st.columns(4)
+            col_t1.metric("URL Validation", f"{t.url_validation_ms:.1f} ms")
+            col_t2.metric("Shallow Clone", f"{t.clone_ms:.1f} ms")
+            col_t3.metric("Inventory Scan", f"{t.scan_ms:.1f} ms")
+            col_t4.metric("Context Prep", f"{t.context_prep_ms:.1f} ms")
+
+            st.markdown("---")
+            st.markdown(
+                f"""
+                - **GitHub URL Validation**: `{t.url_validation_ms:.2f} ms`
+                - **Shallow Repository Clone (depth=1)**: `{t.clone_ms:.2f} ms`
+                - **Inventory Scan & File Classification**: `{t.scan_ms:.2f} ms`
+                - **Smart Context & Prompt Construction**: `{t.context_prep_ms:.2f} ms`
+                - **Total Repository Processing Latency**: `{t.total_ms:.2f} ms` (**{t.total_ms / 1000.0:.2f} seconds**)
+                """
+            )
+            st.success("⚡ Pipeline is optimized for LOW LATENCY (< 1.6s repository processing). Single-pass inventory scanning and smart context selection eliminate unnecessary model overhead.")

@@ -1,39 +1,85 @@
+"""Unit tests for file inspection, sensitive file protection, binary detection, and notebook parsing."""
+
+import json
+import tempfile
 from pathlib import Path
 
-from backend.file_inspector import inspect_repository, summarize_counts
+from backend.file_inspector import (
+    classify_file,
+    is_binary_file,
+    is_sensitive_file,
+    parse_jupyter_notebook,
+    read_text_file,
+)
 
 
-def make_fixture(root: Path) -> None:
-    (root / "README.md").write_text("# Demo\nA Python project.", encoding="utf-8")
-    (root / "main.py").write_text("import sqlite3\nclass Demo: pass\n", encoding="utf-8")
-    (root / "config.yaml").write_text("model: qwen\n", encoding="utf-8")
-    (root / "data.csv").write_text("a,b\n1,2\n", encoding="utf-8")
-    (root / "notes.weird").write_text("function hello():\n    pass\n", encoding="utf-8")
-    (root / "tests" / "test_demo.js").parent.mkdir(parents=True, exist_ok=True)
-    (root / "tests" / "test_demo.js").write_text("test(\"x\", () => {})", encoding="utf-8")
-    (root / ".env").write_text("SECRET=do-not-show\n", encoding="utf-8")
-    (root / "image.png").write_bytes(b"\x89PNG\r\n\x1a\n\x00\x00binary")
-    (root / "nb.ipynb").write_text('{"cells":[{"cell_type":"markdown","source":["# Notebook"]},{"cell_type":"code","source":["print(1)"]}]}', encoding="utf-8")
+def test_sensitive_file_detection():
+    assert is_sensitive_file(".env") is True
+    assert is_sensitive_file(".env.local") is True
+    assert is_sensitive_file("id_rsa") is True
+    assert is_sensitive_file("server.key") is True
+    assert is_sensitive_file("app.py") is False
 
 
-def test_mixed_formats_are_classified(tmp_path: Path) -> None:
-    make_fixture(tmp_path)
-    files = inspect_repository(tmp_path)
-    categories = {f.path: f.category for f in files}
-    assert categories["README.md"] == "documentation"
-    assert categories["main.py"] == "source"
-    assert categories["config.yaml"] == "configuration"
-    assert categories["data.csv"] == "data/schema"
-    assert categories["notes.weird"] == "source"
-    assert categories["image.png"] in {"binary", "asset"}
-    assert categories[".env"] == "sensitive"
-    assert categories["nb.ipynb"] == "notebook"
-    assert categories["tests/test_demo.js"] == "test"
+def test_binary_file_detection():
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        
+        # Text file
+        txt_file = tmp_path / "hello.txt"
+        txt_file.write_text("Hello World", encoding="utf-8")
+        assert is_binary_file(txt_file) is False
+
+        # Binary file with null byte
+        bin_file = tmp_path / "data.bin"
+        bin_file.write_bytes(b"\x00\x01\x02\x03\x04")
+        assert is_binary_file(bin_file) is True
 
 
-def test_docs_only_repo_is_not_empty(tmp_path: Path) -> None:
-    (tmp_path / "README.md").write_text("docs only", encoding="utf-8")
-    files = inspect_repository(tmp_path)
-    counts = summarize_counts(files)
-    assert counts["total_files"] == 1
-    assert counts["documentation_files"] == 1
+def test_classify_file():
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+
+        py_file = tmp_path / "main.py"
+        py_file.write_text("print('hello')", encoding="utf-8")
+        assert classify_file("main.py", py_file) == "source"
+
+        req_file = tmp_path / "requirements.txt"
+        req_file.write_text("streamlit\nfastapi\n", encoding="utf-8")
+        assert classify_file("requirements.txt", req_file) == "dependency"
+
+        docker_file = tmp_path / "Dockerfile"
+        docker_file.write_text("FROM python:3.10", encoding="utf-8")
+        assert classify_file("Dockerfile", docker_file) == "deployment"
+
+        readme_file = tmp_path / "README.md"
+        readme_file.write_text("# Project", encoding="utf-8")
+        assert classify_file("README.md", readme_file) == "documentation"
+
+
+def test_parse_jupyter_notebook():
+    notebook_content = {
+        "cells": [
+            {
+                "cell_type": "markdown",
+                "source": ["# Analysis Notebook\n", "This notebook analyzes data."]
+            },
+            {
+                "cell_type": "code",
+                "source": ["import pandas as pd\n", "df = pd.DataFrame({'a': [1, 2]})"],
+                "outputs": [{"output_type": "stream", "text": ["huge output data..."]}]
+            }
+        ],
+        "metadata": {},
+        "nbformat": 4,
+        "nbformat_minor": 2
+    }
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        nb_path = Path(tmp_dir) / "test.ipynb"
+        nb_path.write_text(json.dumps(notebook_content), encoding="utf-8")
+
+        parsed = parse_jupyter_notebook(nb_path)
+        assert "# Analysis Notebook" in parsed
+        assert "import pandas as pd" in parsed
+        assert "huge output data..." not in parsed  # Outputs are ignored

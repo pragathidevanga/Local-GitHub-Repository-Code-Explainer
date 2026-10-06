@@ -1,72 +1,65 @@
+"""Utility functions for timing, path safety, and string sanitization."""
+
 from __future__ import annotations
 
-import hashlib
 import re
+import time
 from pathlib import Path
-
-SENSITIVE_NAMES = {
-    ".env",
-    ".env.local",
-    ".env.production",
-    ".env.development",
-    "credentials.json",
-    "service-account.json",
-    "id_rsa",
-    "id_ed25519",
-    "private.key",
-}
-SENSITIVE_PARTS = {"secrets", "secret", "credentials", "credential", "private_keys"}
-IGNORED_DIRS = {
-    ".git",
-    ".hg",
-    ".svn",
-    ".venv",
-    "venv",
-    "env",
-    "node_modules",
-    "__pycache__",
-    ".pytest_cache",
-    ".mypy_cache",
-    ".ruff_cache",
-    "dist",
-    "build",
-    ".next",
-    ".nuxt",
-    "target",
-}
+from typing import Tuple
 
 
-def is_sensitive(path: Path) -> bool:
-    lowered = {part.lower() for part in path.parts}
-    if path.name.lower() in SENSITIVE_NAMES:
-        return True
-    if lowered.intersection(SENSITIVE_PARTS):
-        return True
-    if path.suffix.lower() in {".pem", ".p12", ".pfx", ".key", ".crt"}:
-        return True
-    return False
+class Timer:
+    """Context manager for accurate millisecond timing using time.perf_counter()."""
+
+    def __init__(self) -> None:
+        self.start_time: float = 0.0
+        self.elapsed_ms: float = 0.0
+
+    def __enter__(self) -> Timer:
+        self.start_time = time.perf_counter()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.elapsed_ms = (time.perf_counter() - self.start_time) * 1000.0
 
 
-def should_ignore(path: Path) -> bool:
-    return any(part in IGNORED_DIRS for part in path.parts)
+def parse_github_url(url: str) -> Tuple[bool, str, str, str]:
+    """Validate and extract (owner, repo_name, normalized_url) from a GitHub URL.
+
+    Accepts HTTPS GitHub URLs from any public user/organization.
+    Examples:
+        https://github.com/user/repo
+        https://github.com/user/repo.git
+        https://github.com/user/repo/
+    """
+    if not url or not isinstance(url, str):
+        return False, "", "", "URL must be a non-empty string"
+
+    cleaned_url = url.strip().rstrip("/")
+    if cleaned_url.endswith(".git"):
+        cleaned_url = cleaned_url[:-4]
+
+    pattern = r"^https?://(?:www\.)?github\.com/([a-zA-Z0-9_.-]+)/([a-zA-Z0-9_.-]+)$"
+    match = re.match(pattern, cleaned_url)
+
+    if not match:
+        return (
+            False,
+            "",
+            "",
+            "Invalid GitHub URL format. Expected: https://github.com/owner/repository",
+        )
+
+    owner = match.group(1)
+    repo = match.group(2)
+    normalized_url = f"https://github.com/{owner}/{repo}.git"
+    return True, owner, repo, normalized_url
 
 
-def safe_job_id() -> str:
-    import uuid
-
-    return uuid.uuid4().hex
-
-
-def redact_secrets(text: str) -> str:
-    patterns = [
-        (r"(?im)^([A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD|PASS|CREDENTIAL)[A-Z0-9_]*)\s*=\s*[^\n]+$", r"\1=[REDACTED]"),
-        (r"(?i)(api[_-]?key|access[_-]?token|secret|password)\s*[:=]\s*[\"']?[^\"'\s,;]+", r"\1=[REDACTED]"),
-    ]
-    out = text
-    for pattern, repl in patterns:
-        out = re.sub(pattern, repl, out)
-    return out
-
-
-def stable_short_hash(value: str) -> str:
-    return hashlib.sha256(value.encode("utf-8", errors="ignore")).hexdigest()[:12]
+def sanitize_text(text: str) -> str:
+    """Sanitize raw text for safe display and prompt construction."""
+    if not text:
+        return ""
+    # Remove null bytes or non-printable control characters (except newline, tab, carriage return)
+    cleaned = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]", "", text)
+    return cleaned

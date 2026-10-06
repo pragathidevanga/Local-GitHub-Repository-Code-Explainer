@@ -1,69 +1,180 @@
 # Local GitHub Repository Code Explainer
 
-A Streamlit-deployable GenAI application that accepts **any public HTTPS GitHub repository URL**, inspects its contents, and generates a beginner-friendly explanation using a small open-source Hugging Face model running locally inside the Streamlit runtime.
+An AI application built with **Streamlit**, **FastAPI**, **GitPython**, **Ollama**, and **Qwen 2.5 3B** that accepts ANY public HTTPS GitHub repository URL and generates a detailed, evidence-based, beginner-friendly explanation of the repository.
 
-## Pipeline
+---
 
-**GitHub Repository → GitPython → Repository Analyzer → Smart Context → Local Transformers Model → FastAPI → Streamlit → Explanation**
+## 🌟 Key Features & Highlights
 
-The FastAPI backend is started **inside the same Streamlit runtime**, so the deployed app does not need ngrok, an external FastAPI server, Ollama, or a second cloud service.
+- **Multi-Laptop Architecture**: Streamlit Cloud hosts the frontend and repository analysis engine, while GenAI inference occurs directly on **each end-user's own laptop** using their local Ollama instance (`http://127.0.0.1:11434`).
+- **Supports ANY Public GitHub Repository**: Accepts public repositories from any owner, language, framework, or project structure.
+- **Dynamic File Categorization**: Scans complete repository inventory across 11 distinct categories (Source code, Notebooks `.ipynb`, Documentation, Configuration, Dependencies, Web, Data/Schema, Tests, Deployment, Binary assets, Unknown text).
+- **README-Only & Docs-Only Support**: Seamlessly analyzes documentation-only, schema-only, or notebook-only repositories.
+- **Smart Context & Low Latency**: Optimized single-pass inventory scanner and dynamic priority scoring engine limits LLM prompt context to ~38,000 characters and top relevant files to minimize generation latency.
+- **Strict Evidence-Based Output**: Generates detailed explanations formatted under 23 explicit structural sections. Never invents unsupported frameworks or APIs.
+- **Sensitive File Shielding**: Automatically identifies security-sensitive files (`.env`, private keys, secrets) and shields credentials from being sent to Ollama or displayed in UI.
+- **FastAPI & Streamlit Combined**: Full FastAPI application backend with Swagger documentation (`/docs`) and a clean Streamlit user interface.
 
-## Assignment requirements covered
+---
 
-- Accepts public GitHub repository URLs from any owner.
-- Shallow-clones repositories with GitPython (with a safe public-archive fallback when a Git executable is unavailable).
-- Dynamically inventories source code, notebooks, README/docs, configuration, data/schema, tests, markup, styles, deployment files, readable text, assets, and binary files.
-- Jupyter notebooks are parsed without executing them.
-- Sensitive files are withheld from model context.
-- The complete repository is inventoried; only relevant evidence is sent to the model to reduce latency.
-- A real local open-source LLM generates the final explanation. The default model is `HuggingFaceTB/SmolLM2-135M-Instruct`, a public Apache-2.0 model whose Hugging Face model card provides Transformers usage instructions. The model weights are about 269 MB. citeturn880204search0turn880204search2
-- FastAPI, Pydantic and Uvicorn provide the backend API.
-- Streamlit provides the frontend.
-- No hard-coded explanation is used.
+## 🏗️ Architecture & Multi-Laptop Pipeline
 
-## Deploy directly on Streamlit Community Cloud
+```
+                               STREAMLIT CLOUD (Shared Host)
+                                    ┌──────────────────┐
+                                    │      app.py      │
+                                    └────────┬─────────┘
+                                             │
+                                   User Inputs GitHub URL
+                                             │
+                                             ▼
+                                  ┌────────────────────┐
+                                  │   GitPython Repo   │
+                                  │  (Shallow depth=1) │
+                                  └──────────┬─────────┘
+                                             │
+                                             ▼
+                                  ┌────────────────────┐
+                                  │ Single-Pass Inventory│
+                                  │  & Category Scanner│
+                                  └──────────┬─────────┘
+                                             │
+                                             ▼
+                                  ┌────────────────────┐
+                                  │ Smart Context &    │
+                                  │ Qwen Prompt Builder│
+                                  └──────────┬─────────┘
+                                             │
+                                   Passes Prompt to Browser
+                                             │
+┌────────────────────────────────────────────┼────────────────────────────────────────────┐
+│ LAPTOP A / LAPTOP B / LAPTOP C             │                                            │
+│                                            ▼                                            │
+│                                ┌──────────────────────┐                                 │
+│                                │ Browser Custom       │                                 │
+│                                │ JavaScript Component │                                 │
+│                                └──────────┬───────────┘                                 │
+│                                           │                                             │
+│                                 Fetch HTTP / POST Request                               │
+│                                           │                                             │
+│                                           ▼                                             │
+│                                ┌──────────────────────┐                                 │
+│                                │ Local Laptop Ollama  │                                 │
+│                                │ (127.0.0.1:11434)    │                                 │
+│                                └──────────┬───────────┘                                 │
+│                                           │                                             │
+│                                           ▼                                             │
+│                                ┌──────────────────────┐                                 │
+│                                │ Qwen 2.5 3B Model    │                                 │
+│                                └──────────┬───────────┘                                 │
+│                                           │                                             │
+│                                Streams Explanation Back                                 │
+└───────────────────────────────────────────┼────────────────────────────────────────────┘
+                                            ▼
+                                ┌──────────────────────┐
+                                │ Streamlit UI Display │
+                                └──────────────────────┘
+```
 
-1. Upload the project contents to a GitHub repository.
-2. In Streamlit Community Cloud choose the repository and branch `main`.
-3. Set **Main file path** to `app.py`.
-4. Use Python 3.12 in Advanced settings.
-5. Do **not** add a `BACKEND_URL` secret. The backend is embedded in the app runtime.
-6. Deploy.
+---
 
-Streamlit Community Cloud deploys from GitHub and lets you choose the repository, branch, entrypoint file, Python version and secrets. citeturn880204search4
+## 💻 First-Time Setup Instructions
 
-## Local run
+### 1. Install Ollama
+Download and install Ollama for your operating system from [ollama.com](https://ollama.com).
 
+### 2. Pull Qwen 2.5 3B Model
+Open your terminal (macOS/Linux) or PowerShell (Windows) and run:
 ```bash
-pip install -r requirements.txt
+ollama pull qwen2.5:3b
+```
+
+### 3. Start Ollama with Browser Origin Allowed (`OLLAMA_ORIGINS`)
+Because the Streamlit app is hosted remotely while Ollama runs locally on your laptop, configure browser origin permissions:
+
+- **Windows (PowerShell)**:
+  ```powershell
+  $env:OLLAMA_ORIGINS="*"
+  ollama serve
+  ```
+
+- **macOS / Linux**:
+  ```bash
+  OLLAMA_ORIGINS="*" ollama serve
+  ```
+
+---
+
+## 🚀 Running the Application
+
+### Option A: Run Streamlit Frontend
+```bash
 streamlit run app.py
 ```
+Open your browser at `http://localhost:8501`.
 
-The app starts its FastAPI server automatically on `127.0.0.1:8000`.
+### Option B: Run FastAPI Backend
+```bash
+python -m uvicorn backend.main:app --reload --port 8000
+```
+- API Health Check: `http://localhost:8000/api/health`
+- Swagger Documentation: `http://localhost:8000/docs`
 
-## Local model
+---
 
-The default model is:
+## 🧪 Running Tests
 
-```text
-HuggingFaceTB/SmolLM2-135M-Instruct
+Execute the full automated test suite:
+```bash
+python -m pytest -v
 ```
 
-It is downloaded from Hugging Face on first analysis and then reused from the runtime cache. No API key is required for this public model.
+Verify clean Python compilation:
+```bash
+python -m compileall .
+```
 
-For a different small public Transformers model, set `LOCAL_MODEL_ID` before starting the app.
+---
 
-## Performance design
+## 📊 Detailed Explanation Format
 
-The application keeps the complete repository inventory but limits the model context to the most relevant evidence. Large readable files are truncated, binary files are metadata-only, and the model input/output token budgets are bounded. The API uses background jobs and polling so the Streamlit request is not held open while repository analysis runs.
+The Qwen 2.5 3B model generates detailed explanations structured into 23 explicit numbered sections:
+1. **Project Overview**
+2. **What the Project Does**
+3. **Main Features**
+4. **Repository Structure**
+5. **Important Files**
+6. **Main Technologies**
+7. **Application Architecture**
+8. **How the Project Works**
+9. **Step-by-Step Workflow**
+10. **Data Flow**
+11. **Important Classes**
+12. **Important Functions**
+13. **Important Modules**
+14. **Dependencies**
+15. **Configuration**
+16. **Database / Storage**
+17. **APIs / External Services**
+18. **Notebook Analysis**
+19. **Testing**
+20. **Running / Deployment**
+21. **End-to-End Workflow**
+22. **Key Takeaways**
+23. **Limitations / Unknown Information**
 
-## Security
+---
 
-- Only public HTTPS GitHub repositories are accepted.
-- Repository code and notebooks are never executed.
-- Sensitive files such as secrets and private keys are not sent to the model.
-- Archive extraction checks for unsafe paths.
+## ❓ Troubleshooting
 
-## Important deployment note
+| Issue | Solution |
+| :--- | :--- |
+| **Ollama Disconnected** | Ensure Ollama is running (`ollama serve`). Check if `http://127.0.0.1:11434` responds. |
+| **Model Missing Error** | Run `ollama pull qwen2.5:3b` in terminal/PowerShell. |
+| **CORS / Browser Blocked** | Set `OLLAMA_ORIGINS="*"` when launching `ollama serve`. |
+| **Git Clone Failed** | Ensure the repository URL is public and HTTPS format (`https://github.com/owner/repo`). |
 
-The term "local model" here means the model is executed locally **inside the Streamlit deployment runtime** using Transformers and PyTorch. It is not an external hosted LLM API.
+---
+
+## 📜 License
+MIT License. Created for the Mini Assessment.

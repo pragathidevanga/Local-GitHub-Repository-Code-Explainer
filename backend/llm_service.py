@@ -1,159 +1,184 @@
+"""Ollama Qwen 2.5 3B prompt builder and Python client interface."""
+
 from __future__ import annotations
 
-import os
-import threading
-from functools import lru_cache
-from typing import Iterable
+import json
+from typing import Dict, Generator, Tuple
+import requests
 
-MODEL_ID = os.getenv("LOCAL_MODEL_ID", "HuggingFaceTB/SmolLM2-135M-Instruct")
-MAX_INPUT_TOKENS = int(os.getenv("MAX_LLM_INPUT_TOKENS", "7000"))
-MAX_OUTPUT_TOKENS = int(os.getenv("MAX_LLM_OUTPUT_TOKENS", "450"))
+from backend.models import OllamaStatus, RepositoryInventory, SmartContext
 
-_model_lock = threading.Lock()
-_model_bundle: tuple[object, object] | None = None
+DEFAULT_OLLAMA_ENDPOINT = "http://127.0.0.1:11434"
+DEFAULT_MODEL = "qwen2.5:3b"
 
 
-def model_name() -> str:
-    return MODEL_ID
+def build_qwen_prompt(inventory: RepositoryInventory, smart_context: SmartContext) -> str:
+    """Build a structured evidence-based Qwen prompt from repository inventory and smart context."""
+    
+    # Format selected file snippets
+    file_snippets_text = []
+    for sf in smart_context.selected_files:
+        trunc_tag = " [TRUNCATED FOR CONTEXT]" if sf.is_truncated else ""
+        file_snippets_text.append(
+            f"========================================================\n"
+            f"FILE: {sf.path} ({sf.category.upper()}){trunc_tag}\n"
+            f"========================================================\n"
+            f"{sf.content}\n"
+        )
+
+    all_snippets = "\n".join(file_snippets_text)
+
+    prompt = f"""You are an expert AI software architect explaining a real GitHub repository to a beginner student.
+
+CRITICAL INSTRUCTIONS:
+- Use ONLY the supplied repository evidence below.
+- Do NOT invent files, frameworks, technologies, databases, APIs, functions, classes, features, commands, workflows, or architecture.
+- Explain the repository in detailed, simple, beginner-friendly language.
+- If information cannot be determined from the supplied repository evidence, say so explicitly: "This could not be determined from the available repository content."
+
+========================================================
+REPOSITORY METADATA & INVENTORY EVIDENCE
+========================================================
+Repository Owner: {inventory.owner}
+Repository Name: {inventory.repo_name}
+Total Files: {inventory.total_files}
+File Category Counts:
+  - Source Code Files: {inventory.category_counts.source}
+  - Notebook Files (.ipynb): {inventory.category_counts.notebook}
+  - Documentation Files: {inventory.category_counts.documentation}
+  - Configuration Files: {inventory.category_counts.configuration}
+  - Dependency Manifests: {inventory.category_counts.dependency}
+  - Web Files (HTML/CSS): {inventory.category_counts.web}
+  - Data / Schema Files: {inventory.category_counts.data_schema}
+  - Test Files: {inventory.category_counts.test}
+  - Deployment / CI/CD Files: {inventory.category_counts.deployment}
+  - Binary / Asset Files: {inventory.category_counts.binary}
+  - Unknown Readable Text Files: {inventory.category_counts.unknown_text}
+
+Detected Languages: {', '.join(inventory.languages) if inventory.languages else 'None explicitly identified'}
+Detected Technologies / Frameworks: {', '.join(inventory.technologies) if inventory.technologies else 'None explicitly identified'}
+
+Folder Structure Preview:
+{chr(10).join(inventory.tree[:30])}
+
+========================================================
+SELECTED REPOSITORY CODE & CONTENT EVIDENCE ({smart_context.file_count} files selected)
+========================================================
+{all_snippets}
+
+========================================================
+REQUIRED DETAILED EXPLANATION FORMAT
+========================================================
+Please generate a detailed, beginner-friendly, evidence-based explanation formatted under the following numbered headers:
+
+1. Project Overview
+2. What the Project Does
+3. Main Features
+4. Repository Structure
+5. Important Files (Explain filename, purpose, key code/classes/functions, and role)
+6. Main Technologies
+7. Application Architecture
+8. How the Project Works
+9. Step-by-Step Workflow
+10. Data Flow
+11. Important Classes
+12. Important Functions
+13. Important Modules
+14. Dependencies
+15. Configuration
+16. Database / Storage
+17. APIs / External Services
+18. Notebook Analysis
+19. Testing
+20. Running / Deployment
+21. End-to-End Workflow
+22. Key Takeaways
+23. Limitations / Unknown Information
+
+Generate the explanation now using strictly the evidence provided above:"""
+
+    return prompt
 
 
-def dependencies_available() -> bool:
+def check_ollama_status(endpoint: str = DEFAULT_OLLAMA_ENDPOINT, target_model: str = DEFAULT_MODEL) -> OllamaStatus:
+    """Check connectivity to local Ollama server and verify Qwen model availability."""
     try:
-        import torch  # noqa: F401
-        import transformers  # noqa: F401
-        return True
-    except ImportError:
-        return False
+        resp = requests.get(f"{endpoint.rstrip('/')}/api/tags", timeout=3.0)
+        if resp.status_code == 200:
+            data = resp.json()
+            models = data.get("models", [])
+            model_names = [m.get("name", "").lower() for m in models]
 
+            target_found = any(target_model.lower() in m_name for m_name in model_names)
 
-def model_loaded() -> bool:
-    return _model_bundle is not None
-
-
-@lru_cache(maxsize=1)
-def _load_model() -> tuple[object, object]:
-    global _model_bundle
-    with _model_lock:
-        if _model_bundle is not None:
-            return _model_bundle
-
-        try:
-            import torch
-            from transformers import AutoModelForCausalLM, AutoTokenizer
-        except ImportError as exc:
-            raise RuntimeError(
-                "Local Hugging Face inference dependencies are missing. "
-                "Install the packages from requirements.txt."
-            ) from exc
-
-        # Keep CPU inference predictable on shared Streamlit Cloud runtimes.
-        thread_count = max(1, min(4, os.cpu_count() or 1))
-        try:
-            torch.set_num_threads(thread_count)
-        except RuntimeError:
-            pass
-
-        tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-        model = AutoModelForCausalLM.from_pretrained(
-            MODEL_ID,
-            torch_dtype=torch.float32,
+            if target_found:
+                return OllamaStatus(
+                    connected=True,
+                    model_available=True,
+                    model_name=target_model,
+                    message=f"Local Ollama connected. Model '{target_model}' is available.",
+                    endpoint=endpoint,
+                )
+            else:
+                return OllamaStatus(
+                    connected=True,
+                    model_available=False,
+                    model_name=target_model,
+                    message=f"Local Ollama is running, but '{target_model}' is not installed.",
+                    endpoint=endpoint,
+                )
+        else:
+            return OllamaStatus(
+                connected=False,
+                model_available=False,
+                model_name=target_model,
+                message=f"Ollama returned HTTP status {resp.status_code}.",
+                endpoint=endpoint,
+            )
+    except Exception as exc:
+        return OllamaStatus(
+            connected=False,
+            model_available=False,
+            model_name=target_model,
+            message=f"Cannot connect to local Ollama at {endpoint}. Ensure Ollama is running.",
+            endpoint=endpoint,
         )
-        model.eval()
-        _model_bundle = (tokenizer, model)
-        return _model_bundle
 
 
-def generate_local(prompt: str) -> str:
+def generate_with_ollama_local(
+    prompt: str,
+    endpoint: str = DEFAULT_OLLAMA_ENDPOINT,
+    model: str = DEFAULT_MODEL,
+    stream: bool = True,
+) -> Tuple[bool, str]:
+    """Execute local Qwen model inference via Ollama HTTP API (for server-side or CLI testing)."""
+    url = f"{endpoint.rstrip('/')}/api/generate"
+    payload = {
+        "model": model,
+        "prompt": prompt,
+        "stream": stream,
+        "options": {
+            "temperature": 0.2,
+            "num_predict": 850,
+        },
+        "keep_alive": "10m",
+    }
+
     try:
-        import torch
-    except ImportError as exc:
-        raise RuntimeError("PyTorch is not installed in the deployment environment.") from exc
-
-    tokenizer, model = _load_model()
-
-    messages = [{"role": "user", "content": prompt}]
-    if getattr(tokenizer, "chat_template", None):
-        model_input = tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True,
-        )
-    else:
-        model_input = f"User:\n{prompt}\n\nAssistant:\n"
-
-    inputs = tokenizer(
-        model_input,
-        return_tensors="pt",
-        truncation=True,
-        max_length=MAX_INPUT_TOKENS,
-    )
-    input_ids = inputs["input_ids"]
-
-    with torch.inference_mode():
-        outputs = model.generate(
-            **inputs,
-            max_new_tokens=MAX_OUTPUT_TOKENS,
-            do_sample=False,
-            use_cache=True,
-            eos_token_id=tokenizer.eos_token_id,
-            pad_token_id=tokenizer.eos_token_id,
-        )
-
-    generated = outputs[0][input_ids.shape[-1] :]
-    text = tokenizer.decode(generated, skip_special_tokens=True).strip()
-    if not text:
-        raise RuntimeError("The local language model returned an empty explanation.")
-    return text
-
-
-# Backward-compatible name used by the existing backend.
-class LocalLLMService:
-    def __init__(self) -> None:
-        self.model = MODEL_ID
-
-    def health(self) -> bool:
-        return dependencies_available()
-
-    def generate(self, prompt: str) -> str:
-        return generate_local(prompt)
-
-
-def build_prompt(*, owner: str, repo_name: str, url: str, report: dict, context_blocks: Iterable[str]) -> str:
-    file_lines = "\n".join(
-        f"- {item['path']} | {item['category']} | {item.get('language') or 'unknown'} | {item['summary']}"
-        for item in report["file_summaries"][:100]
-    )
-    tree = "\n".join(report["folder_tree"][:140])
-    context = "\n\n".join(context_blocks)
-    return f"""You are a repository code explainer for a beginner. Analyze ONLY the supplied repository evidence.
-Do not invent technologies, files, databases, APIs, framework behavior, or commands. If evidence is insufficient, say so.
-Binary files are metadata only. Never assume code was executed.
-
-Repository: {owner}/{repo_name}
-URL: {url}
-Counts: {report['counts']}
-Languages: {report['languages']}
-Detected technologies (evidence-based): {report['technologies']}
-
-FOLDER TREE:
-{tree}
-
-FILE INVENTORY:
-{file_lines}
-
-SELECTED FILE CONTENT:
-{context}
-
-Write a simple-language but technically useful explanation with exactly these headings:
-## Project Overview
-## Main Features / Purpose
-## Main Technologies
-## Repository Structure
-## How It Works
-## Important Files and Components
-## Data Flow
-## Configuration and Dependencies
-## How to Run (only when supported by evidence)
-## Limitations / Notes
-
-Use only evidence from the repository. Mention when important files were truncated or when the repository is primarily documentation, configuration, data, or notebooks rather than conventional source code."""
+        response = requests.post(url, json=payload, stream=stream, timeout=120.0)
+        if response.status_code == 200:
+            full_response = []
+            if stream:
+                for line in response.iter_lines():
+                    if line:
+                        chunk = json.loads(line.decode("utf-8"))
+                        if "response" in chunk:
+                            full_response.append(chunk["response"])
+                return True, "".join(full_response)
+            else:
+                result = response.json()
+                return True, result.get("response", "")
+        else:
+            return False, f"Ollama HTTP error {response.status_code}: {response.text}"
+    except Exception as exc:
+        return False, f"Ollama request failed: {str(exc)}"
