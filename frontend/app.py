@@ -79,7 +79,7 @@ def run_streamlit_app():
         else:
             st.warning(f"🟡 **Local Ollama Connected**: Ollama is running on `{ollama_stat.endpoint}`, but model `qwen2.5:3b` is missing. Run `ollama pull qwen2.5:3b`.")
     else:
-        st.info("💻 **Laptop Ollama Status**: Server inference ready. (To use your laptop's local model, run `$env:OLLAMA_ORIGINS="*"; ollama serve`).")
+        st.info("💻 **Laptop Ollama Status**: Server inference ready. (To use your laptop's local model, run: `$env:OLLAMA_ORIGINS='*'; ollama serve`).")
 
     # Input Form Container (with st.form to capture Enter key and button clicks reliably)
     st.markdown("### 🔗 Enter Public GitHub Repository URL")
