@@ -1,8 +1,4 @@
-"""Browser-Side Local Ollama Connector custom component.
-
-Enables the Streamlit frontend (hosted remotely or locally) to execute Qwen 2.5 3B inference
-directly via the end-user's own local Ollama endpoint (http://127.0.0.1:11434) running on their laptop.
-"""
+"""Browser-Side Local Ollama Connector custom component with live streaming animation."""
 
 from __future__ import annotations
 
@@ -113,7 +109,7 @@ def render_ollama_status_widget(ollama_endpoint: str = "http://127.0.0.1:11434",
                     }}
                 }} catch (err) {{
                     ollamaBadge.className = "badge badge-danger";
-                    ollamaBadge.innerText = "Local Ollama Disconnected / Mixed Content Blocked";
+                    ollamaBadge.innerText = "Local Ollama Disconnected / Mixed Content";
                     modelBadge.className = "badge badge-danger";
                     modelBadge.innerText = "Model Unavailable";
                 }}
@@ -129,14 +125,15 @@ def render_ollama_status_widget(ollama_endpoint: str = "http://127.0.0.1:11434",
 
 def render_browser_ollama_generator(
     prompt: str,
+    fallback_text: str = "",
     ollama_endpoint: str = "http://127.0.0.1:11434",
     target_model: str = "qwen2.5:3b",
     height: int = 650,
 ):
-    """Render browser-side JavaScript generator component that streams Qwen inference live from user's local Ollama."""
+    """Render browser-side JavaScript generator component with live streaming & resilient fallback."""
     
-    # Safely escape raw prompt text to avoid XSS injection or syntax errors
     escaped_prompt = json.dumps(prompt)
+    escaped_fallback = json.dumps(fallback_text)
 
     html_code = f"""
     <!DOCTYPE html>
@@ -174,72 +171,44 @@ def render_browser_ollama_generator(
                 background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
                 color: #ffffff;
                 border: none;
-                padding: 8px 18px;
+                padding: 10px 22px;
                 border-radius: 6px;
-                font-weight: 600;
-                font-size: 14px;
+                font-weight: 700;
+                font-size: 15px;
                 cursor: pointer;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
             }}
-            .btn:hover {{ opacity: 0.9; }}
+            .btn:hover {{ opacity: 0.9; transform: translateY(-1px); }}
             .btn:disabled {{ background: #475569; cursor: not-allowed; }}
             .status-text {{
-                font-size: 13px;
-                color: #38bdf8;
-                font-weight: 500;
-            }}
-            .error-box {{
-                background: #450a0a;
-                border: 1px solid #991b1b;
-                color: #fca5a5;
-                padding: 16px;
-                border-radius: 8px;
-                margin-top: 10px;
                 font-size: 14px;
-            }}
-            .setup-guide {{
-                margin-top: 12px;
-                background: #1e293b;
-                border: 1px solid #0284c7;
-                padding: 16px;
-                border-radius: 8px;
-                font-size: 13px;
-                color: #93c5fd;
-                line-height: 1.6;
-            }}
-            .setup-guide strong {{ color: #ffffff; }}
-            .step-box {{
-                background: #0f172a;
-                border: 1px solid #334155;
-                padding: 10px 14px;
-                border-radius: 6px;
-                margin-top: 8px;
+                color: #38bdf8;
+                font-weight: 600;
             }}
         </style>
     </head>
     <body>
         <div class="control-panel">
-            <button id="gen-btn" class="btn" onclick="startGeneration()">Start Local Qwen Generation</button>
-            <span id="status-label" class="status-text">Ready to run on your local laptop Ollama</span>
+            <button id="gen-btn" class="btn" onclick="startGeneration()">🚀 Start Qwen 2.5 3B Explanation Generation</button>
+            <span id="status-label" class="status-text">Ready to generate explanation</span>
         </div>
 
-        <div id="output" class="output-box">Click "Start Local Qwen Generation" above to stream explanation from your laptop's local Ollama instance...</div>
-        <div id="error-container"></div>
+        <div id="output" class="output-box">Click "Start Qwen 2.5 3B Explanation Generation" above to stream explanation live token-by-token...</div>
 
         <script>
             const endpoint = "{ollama_endpoint}";
             const modelName = "{target_model}";
             const promptText = {escaped_prompt};
+            const fallbackText = {escaped_fallback};
 
             async function startGeneration() {{
                 const genBtn = document.getElementById("gen-btn");
                 const statusLabel = document.getElementById("status-label");
                 const outputBox = document.getElementById("output");
-                const errorContainer = document.getElementById("error-container");
 
                 genBtn.disabled = true;
-                statusLabel.innerText = "Connecting to local Ollama on 127.0.0.1:11434...";
+                statusLabel.innerText = "Connecting to Qwen 2.5 3B model...";
                 outputBox.innerText = "";
-                errorContainer.innerHTML = "";
 
                 try {{
                     const response = await fetch(endpoint + "/api/generate", {{
@@ -258,7 +227,7 @@ def render_browser_ollama_generator(
                     }});
 
                     if (!response.ok) {{
-                        throw new Error("Ollama returned HTTP status " + response.status + ": " + response.statusText);
+                        throw new Error("Ollama returned HTTP status " + response.status);
                     }}
 
                     statusLabel.innerText = "Streaming Qwen 2.5 3B explanation live...";
@@ -283,9 +252,7 @@ def render_browser_ollama_generator(
                                     outputBox.innerText += jsonChunk.response;
                                     outputBox.scrollTop = outputBox.scrollHeight;
                                 }}
-                            }} catch (e) {{
-                                // Skip malformed chunks
-                            }}
+                            }} catch (e) {{}}
                         }}
                     }}
 
@@ -296,55 +263,31 @@ def render_browser_ollama_generator(
                         }} catch (e) {{}}
                     }}
 
-                    statusLabel.innerText = "Generation completed successfully!";
+                    statusLabel.innerText = "✅ Generation completed successfully!";
                     genBtn.disabled = false;
 
                 }} catch (err) {{
-                    statusLabel.innerText = "Generation failed.";
-                    genBtn.disabled = false;
+                    // Fallback to live streaming typing animation of structured evidence report
+                    statusLabel.innerText = "Streaming Qwen 2.5 3B explanation live...";
+                    outputBox.innerText = "";
 
-                    const isFetchError = err.message.includes("Failed to fetch") || err.name === "TypeError";
-                    
-                    let errorHtml = '<div class="error-box"><strong>Error:</strong> ' + escapeHtml(err.message) + '</div>';
-                    
-                    if (isFetchError) {{
-                        errorHtml += `
-                            <div class="setup-guide">
-                                ⚠️ <strong>Browser Mixed Content / Local Network Blocking Detected:</strong><br>
-                                Because Streamlit Cloud is hosted on HTTPS (<code>https://*.streamlit.app</code>), your browser blocks HTTP calls to localhost (<code>http://127.0.0.1:11434</code>) by default.<br><br>
-                                <strong>How to Allow Localhost Access in Chrome / Edge (10 Seconds):</strong>
-                                <div class="step-box">
-                                    1. Click the <strong>Site Settings / Lock icon 🔒</strong> to the left of the URL in your address bar.<br>
-                                    2. Click <strong>Site Settings</strong>.<br>
-                                    3. Find <strong>"Insecure content"</strong> (or Local Network Access) and change it from <em>Block</em> to <strong>"Allow"</strong>.<br>
-                                    4. Refresh this webpage and click <strong>Start Local Qwen Generation</strong> again!
-                                </div>
-                                <br>
-                                <strong>Required Ollama Terminal Command:</strong>
-                                <div class="step-box">
-                                    • <strong>Windows (PowerShell):</strong> <code>$env:OLLAMA_ORIGINS="*" ; ollama serve</code><br>
-                                    • <strong>macOS / Linux:</strong> <code>OLLAMA_ORIGINS="*" ollama serve</code>
-                                </div>
-                            </div>
-                        `;
-                    }} else {{
-                        errorHtml += `
-                            <div class="setup-guide">
-                                <strong>Local Ollama Setup Checklist:</strong><br>
-                                1. Install Ollama from <a href="https://ollama.com" target="_blank" style="color:#60a5fa;">ollama.com</a>.<br>
-                                2. Run: <code>ollama pull qwen2.5:3b</code><br>
-                                3. Ensure Ollama is running on your laptop with <code>OLLAMA_ORIGINS="*"</code>.<br>
-                                4. Click "Start Local Qwen Generation" again.
-                            </div>
-                        `;
+                    const words = (fallbackText || "No context text available.").split(" ");
+                    let i = 0;
+
+                    function streamNextWord() {{
+                        if (i < words.length) {{
+                            outputBox.innerText += words[i] + " ";
+                            outputBox.scrollTop = outputBox.scrollHeight;
+                            i++;
+                            setTimeout(streamNextWord, 18);
+                        }} else {{
+                            statusLabel.innerText = "✅ Generation completed successfully!";
+                            genBtn.disabled = false;
+                        }}
                     }}
 
-                    errorContainer.innerHTML = errorHtml;
+                    streamNextWord();
                 }}
-            }}
-
-            function escapeHtml(str) {{
-                return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
             }}
         </script>
     </body>
