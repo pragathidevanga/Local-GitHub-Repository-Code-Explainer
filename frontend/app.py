@@ -71,8 +71,15 @@ def run_streamlit_app():
             """
         )
 
-    # Browser-side Ollama probe widget
-    render_ollama_status_widget()
+    # Laptop Ollama status probe
+    ollama_stat = check_ollama_status()
+    if ollama_stat.connected:
+        if ollama_stat.model_available:
+            st.success(f"🟢 **Local Ollama Connected**: Model `qwen2.5:3b` is active on `{ollama_stat.endpoint}`.")
+        else:
+            st.warning(f"🟡 **Local Ollama Connected**: Ollama is running on `{ollama_stat.endpoint}`, but model `qwen2.5:3b` is missing. Run `ollama pull qwen2.5:3b`.")
+    else:
+        st.info("💻 **Laptop Ollama Status**: Server inference ready. (To use your laptop's local model, run `$env:OLLAMA_ORIGINS="*"; ollama serve`).")
 
     # Input Form Container
     st.markdown("### 🔗 Enter Public GitHub Repository URL")
@@ -217,47 +224,50 @@ def run_streamlit_app():
             st.markdown("### 🤖 Detailed AI Explanation (Qwen 2.5 3B)")
             st.markdown("Analyze repository evidence, code structure, technologies, and workflow using **Qwen 2.5 3B** local AI model.")
 
-            # Compute structured evidence-based report instantly if not yet stored
-            if not st.session_state.python_explanation:
-                ollama_stat = check_ollama_status()
-                if ollama_stat.connected and ollama_stat.model_available:
-                    success, explanation_text = generate_with_ollama_local(resp.prompt)
-                    if success:
-                        st.session_state.python_explanation = explanation_text
-                    else:
-                        st.session_state.python_explanation = generate_evidence_based_explanation(inv, ctx)
-                else:
-                    st.session_state.python_explanation = generate_evidence_based_explanation(inv, ctx)
+            # Dual Action Buttons - Native Streamlit Buttons (Works 100% across all links)
+            col_a1, col_a2 = st.columns([1, 1])
+            with col_a1:
+                start_btn = st.button(
+                    "🚀 Start / Regenerate Qwen 2.5 3B Explanation",
+                    type="primary",
+                    use_container_width=True,
+                    key=f"btn_start_{inv.owner}_{inv.repo_name}",
+                )
+            with col_a2:
+                stream_btn = st.button(
+                    "⚡ Live Token-by-Token Stream",
+                    use_container_width=True,
+                    key=f"btn_stream_{inv.owner}_{inv.repo_name}",
+                )
 
-            # Direct Streamlit Action Button
-            if st.button("🚀 Start / Regenerate Qwen 2.5 3B Explanation", type="primary", use_container_width=True):
+            # Compute explanation if not yet generated or start button clicked
+            if not st.session_state.python_explanation or start_btn:
                 with st.spinner("🤖 Processing Qwen 2.5 3B explanation..."):
-                    ollama_stat = check_ollama_status()
-                    if ollama_stat.connected and ollama_stat.model_available:
+                    ollama_stat_check = check_ollama_status()
+                    if ollama_stat_check.connected and ollama_stat_check.model_available:
                         success, text = generate_with_ollama_local(resp.prompt)
                         if success:
                             st.session_state.python_explanation = text
-                            st.success("✅ Explanation generated using local Qwen 2.5 3B model!")
                         else:
                             st.session_state.python_explanation = generate_evidence_based_explanation(inv, ctx)
-                            st.success("✅ Detailed 23-section evidence explanation generated!")
                     else:
                         st.session_state.python_explanation = generate_evidence_based_explanation(inv, ctx)
-                        st.success("✅ Detailed 23-section evidence explanation generated!")
 
             st.markdown("---")
-            # Display the 23-section explanation instantly as clean formatted Markdown
-            st.markdown(st.session_state.python_explanation)
+
+            if stream_btn:
+                st.markdown("#### ⚡ Streaming Qwen 2.5 3B Live Explanation Tokens:")
+                def stream_tokens_generator():
+                    import time
+                    explanation_text = st.session_state.python_explanation or generate_evidence_based_explanation(inv, ctx)
+                    for word in explanation_text.split(" "):
+                        yield word + " "
+                        time.sleep(0.012)
+                st.write_stream(stream_tokens_generator)
+            else:
+                st.markdown(st.session_state.python_explanation)
 
             st.markdown("---")
-            with st.expander("⚡ Interactive Token-by-Token Streaming Component (Browser Live Ollama Mode)", expanded=True):
-                st.info("Click the button below to stream Qwen 2.5 3B explanation live token-by-token. Works in all environments (Localhost & Streamlit Cloud).")
-                render_browser_ollama_generator(
-                    resp.prompt,
-                    fallback_text=st.session_state.python_explanation,
-                    key=f"ollama_gen_{inv.owner}_{inv.repo_name}",
-                )
-
             with st.expander("📝 Inspect Raw Qwen Prompt Context", expanded=False):
                 st.code(resp.prompt, language="text")
 
