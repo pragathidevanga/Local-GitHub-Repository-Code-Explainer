@@ -207,9 +207,9 @@ def run_streamlit_app():
                 with st.expander(f"📄 `{sf.path}` — {sf.category.upper()} ({sf.character_count} chars){trunc_str}"):
                     st.code(sf.content[:3000], language="text")
 
-        # TAB 4: AI EXPLANATION (Instant Evidence Report + Live Streaming option)
+        # TAB 4: AI EXPLANATION
         with tab_ai:
-            st.markdown("### 🤖 Detailed AI Explanation")
+            st.markdown("### 🤖 Detailed AI Explanation (Qwen 2.5 3B)")
 
             # Compute structured evidence-based report instantly if not yet stored
             if not st.session_state.python_explanation:
@@ -223,6 +223,19 @@ def run_streamlit_app():
                 else:
                     st.session_state.python_explanation = generate_evidence_based_explanation(inv, ctx)
 
+            # Control buttons
+            col_btn1, col_btn2 = st.columns([1, 1])
+            with col_btn1:
+                if st.button("🔄 Re-run Qwen 2.5 3B Generation (Local Ollama)", type="primary", use_container_width=True):
+                    with st.spinner("🤖 Running Qwen 2.5 3B inference locally..."):
+                        success, text = generate_with_ollama_local(resp.prompt)
+                        if success:
+                            st.session_state.python_explanation = text
+                            st.success("✅ Explanation regenerated using local Qwen 2.5 3B!")
+                        else:
+                            st.warning(f"Local Ollama connection info: {text}")
+
+            st.markdown("---")
             # Display the 23-section explanation instantly as clean formatted Markdown
             st.markdown(st.session_state.python_explanation)
 
