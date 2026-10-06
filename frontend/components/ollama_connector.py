@@ -343,9 +343,9 @@ def render_browser_ollama_generator(
                 }}
             }}
 
-            function escapeHtml(str) {
+            function escapeHtml(str) {{
                 return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            }
+            }}
         </script>
     </body>
     </html>
