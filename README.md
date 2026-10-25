@@ -1,17 +1,18 @@
-# ⚡ GitHub Code Explainer
+# ⚡ Local GitHub Code Explainer 
 
 <p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=rounded&color=0:E11D48,100:F472B6&height=200&section=header&text=GitHub%20Code%20Explainer&fontSize=38&fontColor=FFFFFF&animation=fadeIn&fontAlignY=40&desc=Understand%20Code.%20Learn%20Faster.&descAlignY=65&descSize=17" width="100%" alt="GitHub Code Explainer Banner"/>
+  <img src="https://capsule-render.vercel.app/api?type=rounded&color=0:0D1117,50:1E293B,100:2563EB&height=210&section=header&text=GitHub%20Code%20Explainer&fontSize=38&fontColor=FFFFFF&animation=fadeIn&fontAlignY=38&desc=Understand%20Code%20%7C%20Explore%20Repositories&descAlignY=62&descSize=16" width="100%" alt="GitHub Code Explainer Banner"/>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-E11D48?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
-  <img src="https://img.shields.io/badge/Streamlit-F472B6?style=for-the-badge&logo=streamlit&logoColor=white" alt="Streamlit"/>
-  <img src="https://img.shields.io/badge/GitHub-Code%20Analysis-E11D48?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Code Analysis"/>
+  <img src="https://img.shields.io/badge/Python-0D1117?style=for-the-badge&logo=python&logoColor=60A5FA" alt="Python"/>
+  <img src="https://img.shields.io/badge/Streamlit-0D1117?style=for-the-badge&logo=streamlit&logoColor=60A5FA" alt="Streamlit"/>
+  <img src="https://img.shields.io/badge/AI--Powered-2563EB?style=for-the-badge&logo=openai&logoColor=white" alt="AI Powered"/>
+  <img src="https://img.shields.io/badge/Code%20Analysis-1E293B?style=for-the-badge&logo=github&logoColor=FFFFFF" alt="Code Analysis"/>
 </p>
 
 <p align="center">
-  <strong>A tool designed to help developers explore repositories and understand source code more easily.</strong>
+  <strong>⚡ Explore repositories. Understand code. Learn faster.</strong>
 </p>
 
 ---
@@ -34,36 +35,36 @@
 
 ## 📌 About the Project
 
-**GitHub Code Explainer** is a project focused on making source code easier to understand. It is designed to help developers explore a GitHub repository, inspect its files, and understand code with the help of AI.
+**GitHub Code Explainer** is an AI-assisted application designed to help developers explore GitHub repositories and understand source code more easily.
 
-The project aims to make code exploration more accessible to students, beginners, and developers working with unfamiliar repositories.
+It aims to simplify code exploration by helping users inspect project files and obtain explanations of unfamiliar code. The project is particularly useful as a learning aid for students, beginners, and developers working with new codebases.
 
 ## 🎯 Objectives
 
-- 📂 Make repository source code easier to explore.
-- 🧠 Help users understand code with AI-assisted explanations.
-- 🔍 Simplify the process of examining project files.
+- ⚡ Simplify the process of exploring GitHub repositories.
+- 🧠 Help users understand source code with AI-assisted explanations.
+- 📂 Make relevant project files easier to inspect.
 - 📚 Support learning and understanding unfamiliar codebases.
 - 💻 Provide a straightforward interface for code analysis.
 
 ## ✨ Features
 
-The following descriptions reflect the intended project scope. Keep the features that are implemented in your current version.
+The following descriptions reflect the intended scope of the project. Keep the features that are implemented in your current version.
 
-- 🔗 **Repository Input** — Provide a GitHub repository to analyze.
-- 📂 **Source Code Exploration** — Access relevant repository files.
-- 🧠 **AI-Powered Explanations** — Generate explanations of code using an integrated language model.
-- 📝 **Code Understanding** — Help users understand code logic and purpose.
-- 🖥️ **Interactive Interface** — Use a Streamlit interface, if included in the current implementation.
-- 🔒 **Safer Processing** — Avoid executing untrusted repository code.
+- 🔗 **Repository Analysis** — Accept a GitHub repository for analysis.
+- 📂 **Source Code Exploration** — Inspect relevant repository files.
+- 🧠 **AI-Powered Explanations** — Use an integrated language model to explain code.
+- 📝 **Code Understanding** — Help users understand the purpose and logic of source code.
+- 🖥️ **Interactive Interface** — Provide a user-friendly interface using Streamlit, if included.
+- 🔒 **Safer Processing** — Treat repository contents as untrusted input and avoid executing analyzed code.
 
 ## 🛠️ Technology Stack
 
-<p>
-  <img src="https://img.shields.io/badge/Python-E11D48?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
-  <img src="https://img.shields.io/badge/Streamlit-F472B6?style=for-the-badge&logo=streamlit&logoColor=white" alt="Streamlit"/>
-  <img src="https://img.shields.io/badge/Git-E11D48?style=for-the-badge&logo=git&logoColor=white" alt="Git"/>
-  <img src="https://img.shields.io/badge/Hugging%20Face-F472B6?style=for-the-badge&logo=huggingface&logoColor=white" alt="Hugging Face"/>
+<p align="left">
+  <img src="https://img.shields.io/badge/Python-0D1117?style=for-the-badge&logo=python&logoColor=60A5FA" alt="Python"/>
+  <img src="https://img.shields.io/badge/Streamlit-0D1117?style=for-the-badge&logo=streamlit&logoColor=FF4B4B" alt="Streamlit"/>
+  <img src="https://img.shields.io/badge/GitPython-1E293B?style=for-the-badge&logo=git&logoColor=FFFFFF" alt="GitPython"/>
+  <img src="https://img.shields.io/badge/Hugging%20Face-2563EB?style=for-the-badge&logo=huggingface&logoColor=FFFFFF" alt="Hugging Face"/>
 </p>
 
 | Technology | Purpose |
@@ -71,17 +72,17 @@ The following descriptions reflect the intended project scope. Keep the features
 | Python | Application logic |
 | Streamlit | User interface |
 | GitPython | Git repository operations |
-| Transformers | Loading and using compatible language models |
-| Hugging Face | Model ecosystem |
+| Transformers | Working with compatible language models |
+| Hugging Face | Pretrained model ecosystem |
 | Git and GitHub | Version control and repository hosting |
 
-The technology list is based on the project's planned implementation. Remove or update any tools that are not present in your actual code.
+Update this list to match the technologies used in your actual implementation.
 
 ## 🖼️ Screenshots
 
-Add screenshots from your actual running application.
+Add screenshots of your actual running application to showcase its interface and functionality.
 
-Create a `screenshots` folder in your repository and upload your screenshots there.
+Create a `screenshots` folder in your repository and upload your images.
 
 ```md
 ![Application Interface](screenshots/home.png)
@@ -91,20 +92,18 @@ Create a `screenshots` folder in your repository and upload your screenshots the
 ![Code Explanation](screenshots/code-explanation.png)
 ```
 
-Suggested screenshots:
+Recommended screenshots:
 
 - Main application interface
 - Repository input and file selection
 - Code explanation output
-- Error handling or analysis results
+- Analysis results
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-Install the tools required by your implementation:
-
-- Python 3.12, if that is the version configured for your project
+- Python 3.12, if configured for your project
 - Git
 - Visual Studio Code or another code editor
 
@@ -116,7 +115,7 @@ Install the tools required by your implementation:
 git clone https://github.com/pragathidevanga/GitHub-Code_Explainer.git
 ```
 
-**2. Navigate to the project directory**
+**2. Navigate to the project folder**
 
 ```bash
 cd GitHub-Code_Explainer
@@ -136,25 +135,25 @@ venv\Scripts\activate
 
 **4. Install the dependencies**
 
-If your repository contains `requirements.txt`, run:
+If your repository contains a `requirements.txt` file, run:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-**5. Launch the Streamlit application**
+**5. Run the application**
 
-If the main application file is `app.py`, run:
+If the Streamlit entry point is `app.py`, run:
 
 ```bash
 streamlit run app.py
 ```
 
-> ⚠️ Verify the dependency list, Python version, and entry-point filename against your actual repository before publishing these instructions.
+> ⚠️ Verify the actual Python version, dependencies, and entry-point filename against your repository before publishing these instructions.
 
 ## 📂 Project Structure
 
-Example structure based on a typical Streamlit application. Adjust it to match your actual repository.
+Example structure only. Adjust it to match your actual repository.
 
 ```text
 GitHub-Code_Explainer/
@@ -170,20 +169,20 @@ GitHub-Code_Explainer/
 
 ## 🔒 Security
 
-- Never commit API keys, access tokens, or passwords.
-- Treat external repository contents as untrusted input.
-- Do not execute code from analyzed repositories automatically.
-- Limit the size and number of files processed.
-- Use safe error handling when repositories or files cannot be accessed.
+- Never commit API keys, passwords, or access tokens.
+- Treat repository files as untrusted input.
+- Do not automatically execute code from analyzed repositories.
+- Limit the number and size of files processed.
+- Handle inaccessible repositories and invalid inputs safely.
 
 ## 🔮 Future Enhancements
 
-- 📊 Add more detailed repository summaries.
-- 🧩 Improve explanations for individual functions and classes.
-- 🌐 Support additional programming languages.
-- 🔍 Improve file filtering and code navigation.
-- 📥 Export explanations and summaries.
-- 🎨 Enhance the interface and user experience.
+- ⚡ Improve repository-level summaries.
+- 🧩 Add detailed explanations for functions and classes.
+- 🌐 Expand programming language support.
+- 🔍 Improve file filtering and navigation.
+- 📥 Support exporting explanations and summaries.
+- 🎨 Refine the interface and user experience.
 
 ## 🤝 Contributing
 
@@ -191,7 +190,7 @@ Contributions and suggestions are welcome!
 
 1. Fork the repository.
 2. Create a feature branch.
-3. Make your changes.
+3. Implement your changes.
 4. Test your changes.
 5. Submit a pull request.
 
@@ -199,20 +198,20 @@ Contributions and suggestions are welcome!
 
 **Pragathi BR**
 
-<p>
+<p align="left">
   <a href="https://github.com/pragathidevanga">
-    <img src="https://img.shields.io/badge/GitHub-E11D48?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Profile"/>
+    <img src="https://img.shields.io/badge/GitHub-0D1117?style=for-the-badge&logo=github&logoColor=FFFFFF" alt="GitHub Profile"/>
   </a>
   <a href="https://www.linkedin.com/in/pragathi-br-4b1498405/">
-    <img src="https://img.shields.io/badge/LinkedIn-F472B6?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn Profile"/>
+    <img src="https://img.shields.io/badge/LinkedIn-2563EB?style=for-the-badge&logo=linkedin&logoColor=FFFFFF" alt="LinkedIn Profile"/>
   </a>
   <a href="https://pragathi-br.vercel.app/">
-    <img src="https://img.shields.io/badge/Portfolio-E11D48?style=for-the-badge&logo=vercel&logoColor=white" alt="Portfolio"/>
+    <img src="https://img.shields.io/badge/Portfolio-1E293B?style=for-the-badge&logo=vercel&logoColor=FFFFFF" alt="Portfolio"/>
   </a>
 </p>
 
 ---
 
 <p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=rect&color=E11D48&height=70&section=footer&text=Explore%20Code.%20Understand%20More.&fontSize=20&fontColor=FFFFFF" width="100%" alt="README Footer"/>
+  <img src="https://capsule-render.vercel.app/api?type=rect&color=0D1117&height=80&section=footer&text=%E2%9A%A1%20Explore.%20Understand.%20Build.&fontSize=21&fontColor=60A5FA" width="100%" alt="GitHub Code Explainer Footer"/>
 </p>
