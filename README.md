@@ -1,180 +1,218 @@
-# Local GitHub Repository Code Explainer
+# ⚡ GitHub Code Explainer
 
-An AI application built with **Streamlit**, **FastAPI**, **GitPython**, **Ollama**, and **Qwen 2.5 3B** that accepts ANY public HTTPS GitHub repository URL and generates a detailed, evidence-based, beginner-friendly explanation of the repository.
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=rounded&color=0:E11D48,100:F472B6&height=200&section=header&text=GitHub%20Code%20Explainer&fontSize=38&fontColor=FFFFFF&animation=fadeIn&fontAlignY=40&desc=Understand%20Code.%20Learn%20Faster.&descAlignY=65&descSize=17" width="100%" alt="GitHub Code Explainer Banner"/>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-E11D48?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
+  <img src="https://img.shields.io/badge/Streamlit-F472B6?style=for-the-badge&logo=streamlit&logoColor=white" alt="Streamlit"/>
+  <img src="https://img.shields.io/badge/GitHub-Code%20Analysis-E11D48?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Code Analysis"/>
+</p>
+
+<p align="center">
+  <strong>A tool designed to help developers explore repositories and understand source code more easily.</strong>
+</p>
 
 ---
 
-## 🌟 Key Features & Highlights
+## 📑 Table of Contents
 
-- **Multi-Laptop Architecture**: Streamlit Cloud hosts the frontend and repository analysis engine, while GenAI inference occurs directly on **each end-user's own laptop** using their local Ollama instance (`http://127.0.0.1:11434`).
-- **Supports ANY Public GitHub Repository**: Accepts public repositories from any owner, language, framework, or project structure.
-- **Dynamic File Categorization**: Scans complete repository inventory across 11 distinct categories (Source code, Notebooks `.ipynb`, Documentation, Configuration, Dependencies, Web, Data/Schema, Tests, Deployment, Binary assets, Unknown text).
-- **README-Only & Docs-Only Support**: Seamlessly analyzes documentation-only, schema-only, or notebook-only repositories.
-- **Smart Context & Low Latency**: Optimized single-pass inventory scanner and dynamic priority scoring engine limits LLM prompt context to ~38,000 characters and top relevant files to minimize generation latency.
-- **Strict Evidence-Based Output**: Generates detailed explanations formatted under 23 explicit structural sections. Never invents unsupported frameworks or APIs.
-- **Sensitive File Shielding**: Automatically identifies security-sensitive files (`.env`, private keys, secrets) and shields credentials from being sent to Ollama or displayed in UI.
-- **FastAPI & Streamlit Combined**: Full FastAPI application backend with Swagger documentation (`/docs`) and a clean Streamlit user interface.
+- [About the Project](#-about-the-project)
+- [Objectives](#-objectives)
+- [Features](#-features)
+- [Technology Stack](#️-technology-stack)
+- [Screenshots](#️-screenshots)
+- [Getting Started](#-getting-started)
+- [Project Structure](#-project-structure)
+- [Security](#-security)
+- [Future Enhancements](#-future-enhancements)
+- [Contributing](#-contributing)
+- [Author](#-author)
 
 ---
 
-## 🏗️ Architecture & Multi-Laptop Pipeline
+## 📌 About the Project
 
+**GitHub Code Explainer** is a project focused on making source code easier to understand. It is designed to help developers explore a GitHub repository, inspect its files, and understand code with the help of AI.
+
+The project aims to make code exploration more accessible to students, beginners, and developers working with unfamiliar repositories.
+
+## 🎯 Objectives
+
+- 📂 Make repository source code easier to explore.
+- 🧠 Help users understand code with AI-assisted explanations.
+- 🔍 Simplify the process of examining project files.
+- 📚 Support learning and understanding unfamiliar codebases.
+- 💻 Provide a straightforward interface for code analysis.
+
+## ✨ Features
+
+The following descriptions reflect the intended project scope. Keep the features that are implemented in your current version.
+
+- 🔗 **Repository Input** — Provide a GitHub repository to analyze.
+- 📂 **Source Code Exploration** — Access relevant repository files.
+- 🧠 **AI-Powered Explanations** — Generate explanations of code using an integrated language model.
+- 📝 **Code Understanding** — Help users understand code logic and purpose.
+- 🖥️ **Interactive Interface** — Use a Streamlit interface, if included in the current implementation.
+- 🔒 **Safer Processing** — Avoid executing untrusted repository code.
+
+## 🛠️ Technology Stack
+
+<p>
+  <img src="https://img.shields.io/badge/Python-E11D48?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
+  <img src="https://img.shields.io/badge/Streamlit-F472B6?style=for-the-badge&logo=streamlit&logoColor=white" alt="Streamlit"/>
+  <img src="https://img.shields.io/badge/Git-E11D48?style=for-the-badge&logo=git&logoColor=white" alt="Git"/>
+  <img src="https://img.shields.io/badge/Hugging%20Face-F472B6?style=for-the-badge&logo=huggingface&logoColor=white" alt="Hugging Face"/>
+</p>
+
+| Technology | Purpose |
+|---|---|
+| Python | Application logic |
+| Streamlit | User interface |
+| GitPython | Git repository operations |
+| Transformers | Loading and using compatible language models |
+| Hugging Face | Model ecosystem |
+| Git and GitHub | Version control and repository hosting |
+
+The technology list is based on the project's planned implementation. Remove or update any tools that are not present in your actual code.
+
+## 🖼️ Screenshots
+
+Add screenshots from your actual running application.
+
+Create a `screenshots` folder in your repository and upload your screenshots there.
+
+```md
+![Application Interface](screenshots/home.png)
+
+![Repository Analysis](screenshots/repository-analysis.png)
+
+![Code Explanation](screenshots/code-explanation.png)
 ```
-                               STREAMLIT CLOUD (Shared Host)
-                                    ┌──────────────────┐
-                                    │      app.py      │
-                                    └────────┬─────────┘
-                                             │
-                                   User Inputs GitHub URL
-                                             │
-                                             ▼
-                                  ┌────────────────────┐
-                                  │   GitPython Repo   │
-                                  │  (Shallow depth=1) │
-                                  └──────────┬─────────┘
-                                             │
-                                             ▼
-                                  ┌────────────────────┐
-                                  │ Single-Pass Inventory│
-                                  │  & Category Scanner│
-                                  └──────────┬─────────┘
-                                             │
-                                             ▼
-                                  ┌────────────────────┐
-                                  │ Smart Context &    │
-                                  │ Qwen Prompt Builder│
-                                  └──────────┬─────────┘
-                                             │
-                                   Passes Prompt to Browser
-                                             │
-┌────────────────────────────────────────────┼────────────────────────────────────────────┐
-│ LAPTOP A / LAPTOP B / LAPTOP C             │                                            │
-│                                            ▼                                            │
-│                                ┌──────────────────────┐                                 │
-│                                │ Browser Custom       │                                 │
-│                                │ JavaScript Component │                                 │
-│                                └──────────┬───────────┘                                 │
-│                                           │                                             │
-│                                 Fetch HTTP / POST Request                               │
-│                                           │                                             │
-│                                           ▼                                             │
-│                                ┌──────────────────────┐                                 │
-│                                │ Local Laptop Ollama  │                                 │
-│                                │ (127.0.0.1:11434)    │                                 │
-│                                └──────────┬───────────┘                                 │
-│                                           │                                             │
-│                                           ▼                                             │
-│                                ┌──────────────────────┐                                 │
-│                                │ Qwen 2.5 3B Model    │                                 │
-│                                └──────────┬───────────┘                                 │
-│                                           │                                             │
-│                                Streams Explanation Back                                 │
-└───────────────────────────────────────────┼────────────────────────────────────────────┘
-                                            ▼
-                                ┌──────────────────────┐
-                                │ Streamlit UI Display │
-                                └──────────────────────┘
-```
 
----
+Suggested screenshots:
 
-## 💻 First-Time Setup Instructions
+- Main application interface
+- Repository input and file selection
+- Code explanation output
+- Error handling or analysis results
 
-### 1. Install Ollama
-Download and install Ollama for your operating system from [ollama.com](https://ollama.com).
+## 🚀 Getting Started
 
-### 2. Pull Qwen 2.5 3B Model
-Open your terminal (macOS/Linux) or PowerShell (Windows) and run:
+### Prerequisites
+
+Install the tools required by your implementation:
+
+- Python 3.12, if that is the version configured for your project
+- Git
+- Visual Studio Code or another code editor
+
+### Installation
+
+**1. Clone the repository**
+
 ```bash
-ollama pull qwen2.5:3b
+git clone https://github.com/pragathidevanga/GitHub-Code_Explainer.git
 ```
 
-### 3. Start Ollama with Browser Origin Allowed (`OLLAMA_ORIGINS`)
-Because the Streamlit app is hosted remotely while Ollama runs locally on your laptop, configure browser origin permissions:
+**2. Navigate to the project directory**
 
-- **Windows (PowerShell)**:
-  ```powershell
-  $env:OLLAMA_ORIGINS="*"
-  ollama serve
-  ```
+```bash
+cd GitHub-Code_Explainer
+```
 
-- **macOS / Linux**:
-  ```bash
-  OLLAMA_ORIGINS="*" ollama serve
-  ```
+**3. Create a virtual environment**
 
----
+```bash
+python -m venv venv
+```
 
-## 🚀 Running the Application
+Activate it on Windows:
 
-### Option A: Run Streamlit Frontend
+```bash
+venv\Scripts\activate
+```
+
+**4. Install the dependencies**
+
+If your repository contains `requirements.txt`, run:
+
+```bash
+pip install -r requirements.txt
+```
+
+**5. Launch the Streamlit application**
+
+If the main application file is `app.py`, run:
+
 ```bash
 streamlit run app.py
 ```
-Open your browser at `http://localhost:8501`.
 
-### Option B: Run FastAPI Backend
-```bash
-python -m uvicorn backend.main:app --reload --port 8000
-```
-- API Health Check: `http://localhost:8000/api/health`
-- Swagger Documentation: `http://localhost:8000/docs`
+> ⚠️ Verify the dependency list, Python version, and entry-point filename against your actual repository before publishing these instructions.
 
----
+## 📂 Project Structure
 
-## 🧪 Running Tests
+Example structure based on a typical Streamlit application. Adjust it to match your actual repository.
 
-Execute the full automated test suite:
-```bash
-python -m pytest -v
-```
-
-Verify clean Python compilation:
-```bash
-python -m compileall .
+```text
+GitHub-Code_Explainer/
+├── app.py
+├── requirements.txt
+├── README.md
+├── .gitignore
+└── screenshots/
+    ├── home.png
+    ├── repository-analysis.png
+    └── code-explanation.png
 ```
 
+## 🔒 Security
+
+- Never commit API keys, access tokens, or passwords.
+- Treat external repository contents as untrusted input.
+- Do not execute code from analyzed repositories automatically.
+- Limit the size and number of files processed.
+- Use safe error handling when repositories or files cannot be accessed.
+
+## 🔮 Future Enhancements
+
+- 📊 Add more detailed repository summaries.
+- 🧩 Improve explanations for individual functions and classes.
+- 🌐 Support additional programming languages.
+- 🔍 Improve file filtering and code navigation.
+- 📥 Export explanations and summaries.
+- 🎨 Enhance the interface and user experience.
+
+## 🤝 Contributing
+
+Contributions and suggestions are welcome!
+
+1. Fork the repository.
+2. Create a feature branch.
+3. Make your changes.
+4. Test your changes.
+5. Submit a pull request.
+
+## 👩‍💻 Author
+
+**Pragathi BR**
+
+<p>
+  <a href="https://github.com/pragathidevanga">
+    <img src="https://img.shields.io/badge/GitHub-E11D48?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Profile"/>
+  </a>
+  <a href="https://www.linkedin.com/in/pragathi-br-4b1498405/">
+    <img src="https://img.shields.io/badge/LinkedIn-F472B6?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn Profile"/>
+  </a>
+  <a href="https://pragathi-br.vercel.app/">
+    <img src="https://img.shields.io/badge/Portfolio-E11D48?style=for-the-badge&logo=vercel&logoColor=white" alt="Portfolio"/>
+  </a>
+</p>
+
 ---
 
-## 📊 Detailed Explanation Format
-
-The Qwen 2.5 3B model generates detailed explanations structured into 23 explicit numbered sections:
-1. **Project Overview**
-2. **What the Project Does**
-3. **Main Features**
-4. **Repository Structure**
-5. **Important Files**
-6. **Main Technologies**
-7. **Application Architecture**
-8. **How the Project Works**
-9. **Step-by-Step Workflow**
-10. **Data Flow**
-11. **Important Classes**
-12. **Important Functions**
-13. **Important Modules**
-14. **Dependencies**
-15. **Configuration**
-16. **Database / Storage**
-17. **APIs / External Services**
-18. **Notebook Analysis**
-19. **Testing**
-20. **Running / Deployment**
-21. **End-to-End Workflow**
-22. **Key Takeaways**
-23. **Limitations / Unknown Information**
-
----
-
-## ❓ Troubleshooting
-
-| Issue | Solution |
-| :--- | :--- |
-| **Ollama Disconnected** | Ensure Ollama is running (`ollama serve`). Check if `http://127.0.0.1:11434` responds. |
-| **Model Missing Error** | Run `ollama pull qwen2.5:3b` in terminal/PowerShell. |
-| **CORS / Browser Blocked** | Set `OLLAMA_ORIGINS="*"` when launching `ollama serve`. |
-| **Git Clone Failed** | Ensure the repository URL is public and HTTPS format (`https://github.com/owner/repo`). |
-
----
-
-## 📜 License
-MIT License. Created for the Mini Assessment.
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=rect&color=E11D48&height=70&section=footer&text=Explore%20Code.%20Understand%20More.&fontSize=20&fontColor=FFFFFF" width="100%" alt="README Footer"/>
+</p>
