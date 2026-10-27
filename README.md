@@ -38,6 +38,7 @@
 **GitHub Code Explainer** is an AI-assisted application designed to help developers explore GitHub repositories and understand source code more easily.
 
 It aims to simplify code exploration by helping users inspect project files and obtain explanations of unfamiliar code. The project is particularly useful as a learning aid for students, beginners, and developers working with new codebases.
+AI-powered tool to explore GitHub repositories and understand source code using Python, Streamlit, and Transformers.
 
 ## 🎯 Objectives
 
